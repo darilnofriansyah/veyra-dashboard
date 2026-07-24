@@ -18,7 +18,7 @@
   * { box-sizing: border-box; }
   body { margin: 0; min-width: 320px; background: #f6f8fb; color: var(--color-veyra-ink); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
   button, select { font: inherit; }
-  :focus-visible { outline: 3px solid color-mix(in srgb, var(--color-veyra-cyan) 55%, white); outline-offset: 3px; }
+  :focus-visible { outline: 3px solid color-mix(in srgb, var(--color-veyra-cyan) 45%, var(--color-veyra-navy)); outline-offset: 3px; }
   progress { border: 0; border-radius: 999px; overflow: hidden; }
 }
 
@@ -29,7 +29,7 @@
 }
 
 .budget-progress[data-status="warning"] { --progress-color: #f59e0b; }
-.budget-progress[data-status="danger"] { --progress-color: var(--color-veyra-danger); }
+.budget-progress[data-status="over"] { --progress-color: var(--color-veyra-danger); }
 .budget-progress::-webkit-progress-bar { background: #e6e8ef; }
 .budget-progress::-webkit-progress-value { background: var(--progress-color); }
 .budget-progress::-moz-progress-bar { background: var(--progress-color); }

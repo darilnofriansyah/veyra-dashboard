@@ -1,5 +1,7 @@
 import type { Budget, Transaction } from "./finance";
 
+export const fixtureCategories = ["Housing", "Food & Dining", "Transport", "Bills & Utilities", "Shopping"];
+
 function monthKey(now: string, offset: number) {
   const [year, month] = now.slice(0, 7).split("-").map(Number);
   const shifted = new Date(Date.UTC(year, month - 1 + offset, 1));
@@ -10,7 +12,7 @@ function isoDate(key: string, day: number) {
   return `${key}-${String(day).padStart(2, "0")}`;
 }
 
-export function createFixtureData(now: string): { transactions: Transaction[]; budgets: Budget[] } {
+export function createFixtureTransactions(now: string): Transaction[] {
   const months = [monthKey(now, 0), monthKey(now, -1), monthKey(now, -2)];
   const rows = (key: string, income: number, scale: number): Transaction[] => [
     { id: `${key}-salary`, date: isoDate(key, 1), merchant: "Salary", category: "Income", amount: income, type: "income" },
@@ -22,18 +24,19 @@ export function createFixtureData(now: string): { transactions: Transaction[]; b
     { id: `${key}-shop`, date: isoDate(key, 20), merchant: "Tokopedia", category: "Shopping", amount: Math.round(920_000 * scale), type: "expense" }
   ];
 
-  return {
-    transactions: [
-      ...rows(months[0], 15_600_000, 1),
-      ...rows(months[1], 14_400_000, 1.08),
-      ...rows(months[2], 14_000_000, 1.02)
-    ],
-    budgets: [
-      { category: "Housing", limit: 3_800_000 },
-      { category: "Food & Dining", limit: 1_700_000 },
-      { category: "Transport", limit: 900_000 },
-      { category: "Bills & Utilities", limit: 900_000 },
-      { category: "Shopping", limit: 1_500_000 }
-    ]
-  };
+  return [
+    ...rows(months[0], 15_600_000, 1),
+    ...rows(months[1], 14_400_000, 1.08),
+    ...rows(months[2], 14_000_000, 1.02)
+  ];
+}
+
+export function createFixtureBudgets(): Budget[] {
+  return [
+    { category: "Housing", limit: 3_800_000 },
+    { category: "Food & Dining", limit: 1_700_000 },
+    { category: "Transport", limit: 900_000 },
+    { category: "Bills & Utilities", limit: 900_000 },
+    { category: "Shopping", limit: 1_500_000 }
+  ];
 }

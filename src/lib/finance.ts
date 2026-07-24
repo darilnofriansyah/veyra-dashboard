@@ -10,7 +10,7 @@ export type Transaction = {
 };
 
 export type Budget = { category: string; limit: number };
-export type OverviewInput = { transactions: Transaction[]; budgets: Budget[]; period: Period; now: string };
+export type OverviewInput = { transactions: Transaction[]; budgets: Budget[]; period: Period; now: string; knownCategories?: string[] };
 
 export type Totals = {
   totalIncome: number;
@@ -19,7 +19,8 @@ export type Totals = {
   dailyAverage: number;
 };
 
-export type BudgetSummary = Budget & { spent: number; percent: number };
+export type BudgetStatus = "on-track" | "warning" | "over";
+export type BudgetSummary = Budget & { spent: number; percent: number; status: BudgetStatus };
 
 export type OverviewSummary = Totals & {
   hasTransactions: boolean;
@@ -97,7 +98,7 @@ export function summarizeOverview(input: OverviewInput): OverviewSummary {
   const inPeriod = (transaction: Transaction, key: string, maxDay: number) => transaction.date.startsWith(key) && Number(transaction.date.slice(-2)) <= maxDay;
   const selected = input.transactions.filter((transaction) => inPeriod(transaction, selectedKey, selectedDays));
   const compared = input.transactions.filter((transaction) => inPeriod(transaction, comparisonKey, comparisonDays));
-  const knownCategories = new Set(input.budgets.map((budget) => budget.category));
+  const knownCategories = new Set(input.knownCategories ?? input.budgets.map((budget) => budget.category));
   const expenses = selected.filter((transaction) => transaction.type === "expense");
   const amountsByCategory = new Map<string, number>();
   const addCategory = (category: string, amount: number) => amountsByCategory.set(category, (amountsByCategory.get(category) ?? 0) + amount);
@@ -115,13 +116,15 @@ export function summarizeOverview(input: OverviewInput): OverviewSummary {
 
   const allBudgets = input.budgets.map((budget) => {
     const spent = amountsByCategory.get(budget.category) ?? 0;
-    return { ...budget, spent, percent: Math.round((spent / budget.limit) * 100) };
+    const ratio = spent / budget.limit;
+    const status: BudgetStatus = ratio > 1 ? "over" : ratio >= 0.8 ? "warning" : "on-track";
+    return { ...budget, spent, percent: Math.round(ratio * 100), status };
   });
-  const rankBudgets = (left: BudgetSummary, right: BudgetSummary) => right.spent - left.spent || right.percent - left.percent;
+  const rankBudgets = (left: BudgetSummary, right: BudgetSummary) => right.spent - left.spent || right.spent / right.limit - left.spent / left.limit;
   const budgets = [...allBudgets].sort(rankBudgets).slice(0, 4);
   const alert = [...allBudgets]
-    .filter((budget) => budget.spent / budget.limit >= 0.8)
-    .sort((left, right) => Number(right.spent / right.limit > 1) - Number(left.spent / left.limit > 1) || right.spent / right.limit - left.spent / left.limit)[0] ?? null;
+    .filter((budget) => budget.status !== "on-track")
+    .sort((left, right) => Number(right.status === "over") - Number(left.status === "over") || right.spent / right.limit - left.spent / left.limit)[0] ?? null;
   const dailySpend = [...expenses.reduce((days, transaction) => {
     days.set(transaction.date, (days.get(transaction.date) ?? 0) + transaction.amount);
     return days;
@@ -129,7 +132,7 @@ export function summarizeOverview(input: OverviewInput): OverviewSummary {
   const recentTransactions = [...selected].sort((left, right) => right.date.localeCompare(left.date) || right.id.localeCompare(left.id)).slice(0, 5);
   const summary = totals(selected, selectedDays);
   const comparison = totals(compared, comparisonDays);
-  const highestCategory = categories[0];
+  const highestCategory = [...categories].sort((left, right) => right.amount - left.amount)[0];
 
   return {
     hasTransactions: selected.length > 0,

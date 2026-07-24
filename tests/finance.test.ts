@@ -39,6 +39,7 @@ test("does not alert when raw budget usage is below 80%", () => {
   });
 
   assert.equal(result.budgets[0].percent, 80);
+  assert.equal(result.budgets[0].status, "on-track");
   assert.equal(result.alert, null);
 });
 
@@ -57,7 +58,24 @@ test("prioritizes a raw over-budget alert despite a rounded 100% display", () =>
   });
 
   assert.equal(result.budgets.find((budget) => budget.category === "Over limit")?.percent, 100);
+  assert.equal(result.budgets.find((budget) => budget.category === "At limit")?.status, "warning");
+  assert.equal(result.budgets.find((budget) => budget.category === "Over limit")?.status, "over");
   assert.equal(result.alert?.category, "Over limit");
+  assert.equal(result.alert?.status, "over");
+});
+
+test("uses the largest grouped category, including Others, for the insight", () => {
+  const result = summarizeOverview({
+    transactions: [
+      { id: "known", date: "2026-07-01", merchant: "Store", category: "Food", amount: 600, type: "expense" },
+      { id: "unknown", date: "2026-07-02", merchant: "Store", category: "Untracked", amount: 700, type: "expense" }
+    ],
+    budgets: [{ category: "Food", limit: 1_000 }],
+    period: "current",
+    now: "2026-07-24"
+  });
+
+  assert.match(result.insight, /^Others is your largest expense/);
 });
 
 test("uses full calendar days for a completed month", () => {

@@ -23,8 +23,34 @@ test("uses App Router, Tailwind v4, and no unfinished dashboard destinations", a
   }
 });
 
+test("loads one request-time server date and passes settled data into the client", async () => {
+  const [page, dashboard, loader, loading] = await Promise.all([
+    readSource("src/app/page.tsx"),
+    readSource("src/components/overview-dashboard.tsx"),
+    readSource("src/lib/overview-loader.ts"),
+    readSource("src/app/loading.tsx")
+  ]);
+
+  assert.match(page, /await connection\(\)/);
+  assert.match(page, /searchParams:\s*Promise/);
+  assert.match(page, /await searchParams/);
+  assert.match(page, /function jakartaToday\(\)/);
+  assert.match(page, /<OverviewDashboard now=\{now\} data=\{data\}/);
+  assert.match(loader, /Promise\.allSettled/);
+  assert.match(loader, /createFixtureTransactions/);
+  assert.match(loader, /createFixtureBudgets/);
+  assert.match(dashboard, /router\.refresh\(\)/);
+  assert.doesNotMatch(dashboard, /jakartaToday|createFixtureData|useSearchParams/);
+  assert.match(loading, /aria-busy="true"/);
+  assert.match(loading, /Loading overview/);
+});
+
 test("composes the approved dashboard hierarchy and development-only fixtures", async () => {
-  const dashboard = await readSource("src/components/overview-dashboard.tsx");
+  const [dashboard, page, loader] = await Promise.all([
+    readSource("src/components/overview-dashboard.tsx"),
+    readSource("src/app/page.tsx"),
+    readSource("src/lib/overview-loader.ts")
+  ]);
 
   for (const section of [
     "Financial health",
@@ -38,12 +64,25 @@ test("composes the approved dashboard hierarchy and development-only fixtures", 
     assert.match(dashboard, new RegExp(section));
   }
   for (const state of ["empty", "budget-error", "transaction-error", "error"]) {
-    assert.match(dashboard, new RegExp(`"${state}"`));
+    assert.match(`${page}\n${loader}`, new RegExp(`"${state}"`));
   }
-  assert.match(dashboard, /process\.env\.NODE_ENV === "development"/);
+  assert.match(`${page}\n${loader}`, /process\.env\.NODE_ENV === "development"/);
   assert.equal([...dashboard.matchAll(/useState(?:<[^>]+>)?\(/g)].length, 1);
   assert.match(dashboard, /useState<Period>\(/);
   assert.match(dashboard, /motion-reduce:transition-none/);
+});
+
+test("uses raw budget status for rows, accessibility, and alert semantics", async () => {
+  const [dashboard, finance] = await Promise.all([
+    readSource("src/components/overview-dashboard.tsx"),
+    readSource("src/lib/finance.ts")
+  ]);
+
+  assert.match(dashboard, /budget\.status/);
+  assert.match(dashboard, /statusLabel\[budget\.status\]/);
+  assert.match(dashboard, /latestAlert\.status/);
+  assert.doesNotMatch(dashboard, /summary\.alert\.percent\s*>=\s*80/);
+  assert.doesNotMatch(finance, /right\.percent\s*-\s*left\.percent/);
 });
 
 test("keeps both data visualizations accessible, data-driven, and fully labeled in IDR", async () => {
@@ -84,7 +123,7 @@ test("keeps transaction-derived budgets honest when transactions fail", async ()
 test("names every budget progress bar", async () => {
   const dashboard = await readSource("src/components/overview-dashboard.tsx");
 
-  assert.match(dashboard, /aria-label=\{`\$\{budget\.category\} budget used: \$\{budget\.percent\}%`\}/);
+  assert.match(dashboard, /aria-label=\{`\$\{budget\.category\} budget used: \$\{budget\.percent\}%, \$\{statusLabel\[budget\.status\]\}`\}/);
 });
 
 test("offers keyboard users a skip link", async () => {

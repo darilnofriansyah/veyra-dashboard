@@ -1,31 +1,21 @@
 "use client";
 
-import { Gauge, House, Receipt, Sparkle, TrendUp, Wallet, Warning } from "@phosphor-icons/react";
+import { CheckCircle, Gauge, House, Receipt, Sparkle, TrendUp, Wallet, Warning } from "@phosphor-icons/react";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 import { CategoryBreakdown } from "@/components/category-breakdown";
 import { SpendingTrend } from "@/components/spending-trend";
 import { comparison } from "@/lib/dashboard-display";
-import { createFixtureData } from "@/lib/fixtures";
-import { formatIdr, summarizeOverview, type Period } from "@/lib/finance";
+import { formatIdr, summarizeOverview, type BudgetStatus, type Period } from "@/lib/finance";
+import type { OverviewLoaderResult } from "@/lib/overview-loader";
 
 const panel = "min-w-0 rounded-veyra border border-veyra-line bg-white p-3";
 const label = "text-xs font-medium text-slate-500";
 const value = "mt-1 block text-xl font-bold tracking-[-0.03em] text-veyra-ink";
 const retry = "mt-3 inline-block rounded-lg border border-veyra-line px-3 py-2 text-xs font-semibold text-sky-700 transition-colors hover:border-veyra-cyan motion-reduce:transition-none";
 const transactionDate = new Intl.DateTimeFormat("en", { day: "numeric", month: "short", timeZone: "UTC" });
-
-type DemoState = "empty" | "budget-error" | "transaction-error" | "error";
-
-function jakartaToday() {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Jakarta",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).format(new Date());
-}
+const statusLabel: Record<BudgetStatus, string> = { "on-track": "On track", warning: "Warning", over: "Over budget" };
 
 const formatCycle = (selectedPeriod: Period, today: string) => {
   const [year, month] = today.slice(0, 7).split("-").map(Number);
@@ -38,35 +28,36 @@ const formatCycle = (selectedPeriod: Period, today: string) => {
 };
 
 function Unavailable({ children }: { children: string }) {
+  const router = useRouter();
   return (
     <div className="grid min-h-24 place-content-center text-center">
       <p className="text-sm text-slate-600">{children}</p>
-      <a href="/" className={retry}>Retry</a>
+      <button type="button" onClick={() => router.refresh()} className={retry}>Retry</button>
     </div>
   );
 }
 
-function DashboardContent({ demoState }: { demoState: DemoState | null }) {
+export function OverviewDashboard({ now, data }: { now: string; data: OverviewLoaderResult }) {
   const [period, setPeriod] = useState<Period>("current");
-  const now = useMemo(jakartaToday, []);
-  const fixture = useMemo(() => createFixtureData(now), [now]);
   const summary = useMemo(
     () => summarizeOverview({
-      ...fixture,
-      transactions: demoState === "empty" ? [] : fixture.transactions,
+      transactions: data.transactions.data ?? [],
+      budgets: data.budgets.data ?? [],
+      knownCategories: data.knownCategories,
       period,
       now
     }),
-    [demoState, fixture, period, now]
+    [data, period, now]
   );
   const cycleLabel = formatCycle(period, now);
-  const transactionError = demoState === "transaction-error";
-  const budgetError = demoState === "budget-error";
+  const transactionError = data.transactions.error;
+  const budgetError = data.budgets.error;
   const guidanceError = transactionError
     ? "Transaction data couldn’t be loaded."
     : budgetError
       ? "Budget data couldn’t be loaded."
       : null;
+  const latestAlert = guidanceError ? null : summary.alert;
   const metrics = [
     { label: "Total Spent", value: summary.totalSpent, previous: summary.comparison.totalSpent, lowerIsBetter: true, icon: Receipt },
     { label: "Total Income", value: summary.totalIncome, previous: summary.comparison.totalIncome, lowerIsBetter: false, icon: Wallet },
@@ -103,7 +94,7 @@ function DashboardContent({ demoState }: { demoState: DemoState | null }) {
         </header>
         <output className="sr-only" aria-live="polite">{period === "current" ? "This Month" : "Last Month"} selected.</output>
 
-        {demoState === "error" ? (
+        {transactionError && budgetError ? (
           <section className={panel} aria-label="Financial summary error">
             <Unavailable>Your financial summary couldn’t be loaded.</Unavailable>
           </section>
@@ -145,14 +136,14 @@ function DashboardContent({ demoState }: { demoState: DemoState | null }) {
               <article className={panel}>
                 <h2 className="mb-3 text-sm font-bold">Budget Status</h2>
                 {transactionError || budgetError ? <Unavailable>{guidanceError!}</Unavailable> : summary.budgets.map((budget) => (
-                  <div key={budget.category} className="grid grid-cols-[1fr_auto] gap-1 border-b border-veyra-line py-1">
+                  <div key={budget.category} data-status={budget.status} className="grid grid-cols-[1fr_auto] gap-1 border-b border-veyra-line py-1">
                     <div><strong className="text-sm">{budget.category}</strong><span className="block text-xs text-slate-500">{formatIdr(budget.spent)} / {formatIdr(budget.limit)}</span></div>
-                    <span className="text-xs">{budget.percent}%</span>
+                    <span className={`text-xs ${budget.status === "over" ? "text-veyra-danger" : budget.status === "warning" ? "text-veyra-warning" : "text-slate-600"}`}>{budget.percent}%</span>
                     <progress
                       max="100"
                       value={Math.min(budget.percent, 100)}
-                      aria-label={`${budget.category} budget used: ${budget.percent}%`}
-                      data-status={budget.percent > 100 ? "danger" : budget.percent >= 80 ? "warning" : "healthy"}
+                      aria-label={`${budget.category} budget used: ${budget.percent}%, ${statusLabel[budget.status]}`}
+                      data-status={budget.status}
                       className="budget-progress col-span-2 h-1.5 w-full"
                     >{budget.percent}%</progress>
                   </div>
@@ -173,9 +164,14 @@ function DashboardContent({ demoState }: { demoState: DemoState | null }) {
             </section>
 
             <section className="mt-2.5 grid gap-2.5 xl:grid-cols-2">
-              <article className={`${panel} border-t-[3px] border-t-veyra-warning`}>
-                <h2 className="mb-3 flex items-center gap-2 text-sm font-bold"><Warning size={16} weight="duotone" aria-hidden="true" />Latest Alert</h2>
-                {guidanceError ? <Unavailable>{guidanceError}</Unavailable> : <p className="text-sm">{summary.alert && summary.alert.percent >= 80 ? `${summary.alert.category} budget is at ${summary.alert.percent}%.` : "Tracked budgets are on course."}</p>}
+              <article className={`${panel} border-t-[3px] ${latestAlert ? "border-t-veyra-warning" : guidanceError ? "border-t-veyra-line" : "border-t-veyra-success"}`}>
+                <h2 className="mb-3 flex items-center gap-2 text-sm font-bold">
+                  {latestAlert
+                    ? <Warning size={16} weight="duotone" aria-hidden="true" />
+                    : !guidanceError && <CheckCircle size={16} weight="duotone" aria-hidden="true" className="text-veyra-success" />}
+                  Latest Alert
+                </h2>
+                {guidanceError ? <Unavailable>{guidanceError}</Unavailable> : <p className="text-sm">{latestAlert ? `${latestAlert.category} budget ${latestAlert.status === "over" ? "is over its limit at" : "is at"} ${latestAlert.percent}%.` : "Tracked budgets are on course."}</p>}
               </article>
               <article id="veyra-insight" className={`${panel} relative min-h-40 overflow-hidden`}>
                 <picture aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-[48%] max-w-[280px]">
@@ -193,20 +189,4 @@ function DashboardContent({ demoState }: { demoState: DemoState | null }) {
       </main>
     </div>
   );
-}
-
-function DevelopmentDashboard() {
-  const requestedState = useSearchParams().get("state");
-  const demoState = ["empty", "budget-error", "transaction-error", "error"].includes(requestedState ?? "")
-    ? requestedState as DemoState
-    : null;
-  return <DashboardContent demoState={demoState} />;
-}
-
-export function OverviewDashboard() {
-  return process.env.NODE_ENV === "development" ? (
-    <Suspense>
-      <DevelopmentDashboard />
-    </Suspense>
-  ) : <DashboardContent demoState={null} />;
 }

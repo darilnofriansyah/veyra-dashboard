@@ -45,6 +45,20 @@ The prior pass was blocked by two newly identified P1 regressions until this pos
 
 Post-fix Playwright captures at 1440 × 900 confirm `IDR 3.200.000`, `IDR 1.600.000`, `IDR 0`, and donut total `IDR 6.515.000`; the populated and empty/Last Month documents each remain exactly 900px tall. The inspected combined source-plus-implementation comparison at `/home/unmeii/apps/veyra/screenshots/veyra-source-vs-implementation.png` shows the full hierarchy remains in view. The empty/Last Month capture contains four period-neutral empty messages and no stale “this month” message. No P0, P1, or P2 remains.
 
+### Final whole-branch review
+
+The request-time data correction did not change the visible default composition, so the existing captures and combined comparison remain valid. A fresh user-approved Chromium run at 1440 × 900 confirmed:
+
+- the dynamic response stream includes the stable `loading.tsx` shell and block skeletons;
+- the populated document remains exactly 900px tall;
+- period switching changes the rendered summary while retry refresh preserves the selected period;
+- budget, transaction, and complete error states expose local retry controls through independent loader results;
+- raw budget status supplies progress styling and accessible names (`Warning` and `On track` observed in the fixture UI);
+- the no-alert state uses a success border/icon rather than warning treatment; and
+- console warnings/errors, page errors, failed requests, and hydration mismatch messages are absent.
+
+The focus ring now mixes cyan with navy for stronger contrast. No new screenshot comparison was generated because the default populated frame is visually unchanged. No P0, P1, or P2 remains.
+
 ## Fidelity review
 
 - Typography: hierarchy, weight, tracking, and compact dashboard sizing align closely. P3: the exact source font was not supplied, so the implementation uses the configured system sans stack.
