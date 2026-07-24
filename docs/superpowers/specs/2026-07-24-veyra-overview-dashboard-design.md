@@ -93,7 +93,7 @@ This hierarchy keeps the overview scannable while preserving enough detail for t
 - User identity and current financial cycle anchored at the bottom
 - White surface, cool-gray divider, and cyan active indicator
 
-The original Veyra logo asset must be used. A screenshot crop or approximate redraw is not acceptable.
+Use an original Veyra logo asset when available. For this prototype, the owner approved generating a provisional logo asset from the supplied Veyra references; do not crop the screenshots or fake the mark with CSS/text.
 
 User identity uses the account's profile image when available and text initials otherwise. Veyra artwork is never used as the user's identity.
 
@@ -366,14 +366,14 @@ The page remains readable in a single column, but a dedicated mobile navigation 
 
 ### Required production assets
 
-#### Original Veyra logo
+#### Veyra logo
 
 - Preferred format: SVG
 - Accepted fallback: transparent PNG at twice the rendered size
 - Required lockups:
   - Mark and wordmark
   - Mark only
-- Must be supplied from the original source rather than reconstructed from a screenshot
+- Prefer the original source. Until it is supplied, use the owner-approved generated provisional asset based on the supplied Veyra references.
 
 #### Veyra dashboard portrait
 

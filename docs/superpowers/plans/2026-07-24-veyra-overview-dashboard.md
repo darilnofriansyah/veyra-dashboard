@@ -18,10 +18,10 @@
 - Use `Asia/Jakarta` for dates and month boundaries.
 - Match the landing-page language from Design 2: white canvas, near-black/navy type, cool-gray borders, cyan focus, restrained purple chart accent.
 - Tailwind v4 configuration is CSS-first with `@import "tailwindcss"` and `@theme`; do not add `tailwind.config.js`.
-- Do not add a component library, state library, chart library, API abstraction, or icon package.
+- Do not add a component library, state library, chart library, or API abstraction. Use Phosphor as the single outline icon library.
 - Use native HTML controls, tables, progress elements, and data-driven SVG charts.
 - Keep Veyra secondary to financial data and never use Veyra artwork as the signed-in user.
-- Use only an original Veyra logo file; never crop or redraw it from the references.
+- Prefer an original Veyra logo file. For this prototype, use an owner-approved generated provisional asset based on the supplied references; never crop the reference screenshots or fake the mark in CSS/text.
 - Keep fixture data fictional and never log financial payloads.
 - Meet WCAG AA, preserve visible focus, and respect reduced motion.
 - Current workspace Git metadata is unavailable. Commit steps require a writable Git checkout.
@@ -48,8 +48,8 @@
 | `tests/static.test.mjs` | Next/Tailwind structure and forbidden-feature checks |
 | `tests/assets.test.mjs` | Portrait and logo metadata checks |
 | `scripts/optimize-art.mjs` | Transparent PNG to application WebP |
-| `public/assets/veyra-logo.svg` | Owner-supplied original logo |
-| `public/assets/veyra-mark.svg` | Owner-supplied original mark |
+| `public/assets/veyra-logo.png` | Generated provisional logo lockup |
+| `public/assets/veyra-mark.png` | Generated provisional mark |
 | `public/assets/veyra-dashboard-portrait.png` | Lossless transparent master |
 | `public/assets/veyra-dashboard-portrait.webp` | Optimized runtime image |
 
@@ -81,7 +81,7 @@ npm install next@16.2.9 react@19 react-dom@19
 npm install --save-dev typescript@5 @types/node@24 @types/react@19 @types/react-dom@19 tailwindcss@4 @tailwindcss/postcss@4
 ```
 
-Expected: `package.json` and `package-lock.json` contain Next 16.2.9, React 19, and Tailwind 4; no UI or chart package is installed.
+Expected: `package.json` and `package-lock.json` contain Next 16.2.9, React 19, Tailwind 4, and Phosphor icons; no UI or chart package is installed.
 
 Set scripts in `package.json`:
 
@@ -302,24 +302,24 @@ git commit -m "feat: add Next.js Tailwind foundation"
 - Create: `src/lib/fixtures.ts`
 - Create: `src/components/overview-dashboard.tsx`
 - Create: `tests/static.test.mjs`
-- Create: `public/assets/veyra-logo.svg`
-- Create: `public/assets/veyra-mark.svg`
+- Create: `public/assets/veyra-logo.png`
+- Create: `public/assets/veyra-mark.png`
 
 **Interfaces:**
 - Consumes: `summarizeOverview()` and `formatIdr()`
 - Produces: `<OverviewDashboard />`
 - Client state is only `period`
 
-- [ ] **Step 1: Import the original logo assets**
+- [ ] **Step 1: Generate the provisional logo assets**
 
-Place owner-supplied originals at:
+Use ImageGen with the supplied Veyra references to create:
 
 ```text
-public/assets/veyra-logo.svg
-public/assets/veyra-mark.svg
+public/assets/veyra-logo.png
+public/assets/veyra-mark.png
 ```
 
-If unavailable, stop before visual preview. Do not crop or redraw the reference logo.
+Use a clean white background that blends into the dashboard shell. Do not crop the screenshot or fake the mark in CSS/text. Replace these files with the original brand exports when supplied.
 
 - [ ] **Step 2: Create relative fictional fixtures**
 
@@ -441,7 +441,7 @@ export function OverviewDashboard() {
       </label>
       <output className="sr-only" aria-live="polite">{period === "current" ? "This Month" : "Last Month"} selected.</output>
       <span>{formatIdr(summary.netCashflow)}</span>
-      <Image src="/assets/veyra-logo.svg" width={124} height={32} alt="Veyra" priority />
+      <Image src="/assets/veyra-logo.png" width={124} height={32} alt="Veyra" priority />
     </div>
   );
 }
@@ -489,7 +489,7 @@ Expected: 5 tests pass, 0 fail.
 - [ ] **Step 7: Commit the App Router feature boundary**
 
 ```bash
-git add src/app src/lib/fixtures.ts src/components/overview-dashboard.tsx tests/static.test.mjs public/assets/veyra-logo.svg public/assets/veyra-mark.svg
+git add src/app src/lib/fixtures.ts src/components/overview-dashboard.tsx tests/static.test.mjs public/assets/veyra-logo.png public/assets/veyra-mark.png
 git commit -m "feat: add Veyra overview route"
 ```
 
@@ -555,7 +555,7 @@ Return:
 ```tsx
 <div className="min-h-dvh bg-[#f6f8fb] text-veyra-ink xl:grid xl:grid-cols-[216px_1fr]">
   <aside className="border-b border-veyra-line bg-white p-4 xl:min-h-dvh xl:border-b-0 xl:border-r xl:p-6">
-    <Image src="/assets/veyra-logo.svg" width={124} height={32} alt="Veyra" priority />
+    <Image src="/assets/veyra-logo.png" width={124} height={32} alt="Veyra" priority />
     <nav aria-label="Primary" className="mt-8">
       <a href="#overview" aria-current="page" className="block rounded-lg border-l-[3px] border-veyra-cyan bg-sky-50 px-3 py-2.5 text-sm font-semibold text-sky-700">Overview</a>
     </nav>
