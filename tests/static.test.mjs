@@ -80,6 +80,7 @@ test("uses raw budget status for rows, accessibility, and alert semantics", asyn
 
   assert.match(dashboard, /budget\.status/);
   assert.match(dashboard, /statusLabel\[budget\.status\]/);
+  assert.match(dashboard, /\{budget\.percent\}% · \{statusLabel\[budget\.status\]\}/);
   assert.match(dashboard, /latestAlert\.status/);
   assert.doesNotMatch(dashboard, /summary\.alert\.percent\s*>=\s*80/);
   assert.doesNotMatch(finance, /right\.percent\s*-\s*left\.percent/);
@@ -124,6 +125,14 @@ test("names every budget progress bar", async () => {
   const dashboard = await readSource("src/components/overview-dashboard.tsx");
 
   assert.match(dashboard, /aria-label=\{`\$\{budget\.category\} budget used: \$\{budget\.percent\}%, \$\{statusLabel\[budget\.status\]\}`\}/);
+});
+
+test("keeps the loading header responsive and announces the pending overview", async () => {
+  const loading = await readSource("src/app/loading.tsx");
+
+  assert.match(loading, /<header className="mb-2\.5 flex flex-wrap items-start justify-between gap-2\.5">/);
+  assert.match(loading, /aria-label="Loading overview…"/);
+  assert.match(loading, />Loading overview…<\/span>/);
 });
 
 test("offers keyboard users a skip link", async () => {

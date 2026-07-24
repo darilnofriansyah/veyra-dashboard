@@ -59,6 +59,14 @@ The request-time data correction did not change the visible default composition,
 
 The focus ring now mixes cyan with navy for stronger contrast. No new screenshot comparison was generated because the default populated frame is visually unchanged. No P0, P1, or P2 remains.
 
+### Final re-review correction
+
+The final re-review found that raw budget status was present in assistive text and color but not visible copy. Budget rows now render the rounded display percent together with `On track`, `Warning`, or `Over budget`, keeping threshold semantics distinguishable without color.
+
+The populated 1440 × 900 implementation was recaptured and the full/focused comparisons rebuilt. The inspected combined comparison at `/home/unmeii/apps/veyra/screenshots/veyra-source-vs-implementation.png` confirms the status labels remain compact, all four budget rows fit without horizontal overflow, the guidance row stays fully visible, and `document.scrollHeight` remains exactly 900px.
+
+A JavaScript-disabled loading-fallback check at 375px with 200% text confirmed `clientWidth` and `scrollWidth` are both 375 and the announcement is `Loading overview…`. Normal Chromium contexts reported no console warnings/errors, page errors, failed requests, or hydration mismatch. No P0, P1, or P2 remains.
+
 ## Fidelity review
 
 - Typography: hierarchy, weight, tracking, and compact dashboard sizing align closely. P3: the exact source font was not supplied, so the implementation uses the configured system sans stack.

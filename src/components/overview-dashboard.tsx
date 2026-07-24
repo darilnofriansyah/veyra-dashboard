@@ -138,7 +138,7 @@ export function OverviewDashboard({ now, data }: { now: string; data: OverviewLo
                 {transactionError || budgetError ? <Unavailable>{guidanceError!}</Unavailable> : summary.budgets.map((budget) => (
                   <div key={budget.category} data-status={budget.status} className="grid grid-cols-[1fr_auto] gap-1 border-b border-veyra-line py-1">
                     <div><strong className="text-sm">{budget.category}</strong><span className="block text-xs text-slate-500">{formatIdr(budget.spent)} / {formatIdr(budget.limit)}</span></div>
-                    <span className={`text-xs ${budget.status === "over" ? "text-veyra-danger" : budget.status === "warning" ? "text-veyra-warning" : "text-slate-600"}`}>{budget.percent}%</span>
+                    <span className={`text-xs ${budget.status === "over" ? "text-veyra-danger" : budget.status === "warning" ? "text-veyra-warning" : "text-slate-600"}`}>{budget.percent}% · {statusLabel[budget.status]}</span>
                     <progress
                       max="100"
                       value={Math.min(budget.percent, 100)}

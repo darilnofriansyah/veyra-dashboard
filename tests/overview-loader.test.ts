@@ -38,3 +38,30 @@ test("loads transaction and budget fixtures as independent settled results", asy
     else environment.NODE_ENV = previousNodeEnv;
   }
 });
+
+test("maps malformed sources to only their independent loader result", async () => {
+  const { loadOverview } = await import("../src/lib/overview-loader.ts");
+  const validTransaction = {
+    id: "valid",
+    date: "2026-07-01",
+    merchant: "Store",
+    category: "Food",
+    amount: 100,
+    type: "expense" as const
+  };
+  const validBudget = { category: "Food", limit: 1_000 };
+
+  const malformedTransactions = await loadOverview("2026-07-24", null, {
+    transactions: () => [{ ...validTransaction, amount: -1 }],
+    budgets: () => [validBudget]
+  });
+  assert.equal(malformedTransactions.transactions.error, true);
+  assert.deepEqual(malformedTransactions.budgets.data, [validBudget]);
+
+  const malformedBudgets = await loadOverview("2026-07-24", null, {
+    transactions: () => [validTransaction],
+    budgets: () => [{ ...validBudget, limit: 0 }]
+  });
+  assert.deepEqual(malformedBudgets.transactions.data, [validTransaction]);
+  assert.equal(malformedBudgets.budgets.error, true);
+});
