@@ -41,7 +41,8 @@ test("composes the approved dashboard hierarchy and development-only fixtures", 
     assert.match(dashboard, new RegExp(`"${state}"`));
   }
   assert.match(dashboard, /process\.env\.NODE_ENV === "development"/);
-  assert.equal([...dashboard.matchAll(/useState</g)].length, 1);
+  assert.equal([...dashboard.matchAll(/useState(?:<[^>]+>)?\(/g)].length, 1);
+  assert.match(dashboard, /useState<Period>\(/);
   assert.match(dashboard, /motion-reduce:transition-none/);
 });
 

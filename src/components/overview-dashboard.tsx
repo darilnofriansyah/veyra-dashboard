@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { CategoryBreakdown } from "@/components/category-breakdown";
 import { SpendingTrend } from "@/components/spending-trend";
+import { comparison } from "@/lib/dashboard-display";
 import { createFixtureData } from "@/lib/fixtures";
 import { formatIdr, summarizeOverview, type Period } from "@/lib/finance";
 
@@ -33,16 +34,6 @@ const formatCycle = (selectedPeriod: Period, today: string) => {
   const lastDay = new Date(Date.UTC(selectedYear, selectedMonth + 1, 0)).getUTCDate();
   const monthName = new Intl.DateTimeFormat("en", { month: "short", timeZone: "UTC" }).format(selected);
   return `1–${lastDay} ${monthName} ${selectedYear}`;
-};
-
-const comparison = (current: number, previous: number, lowerIsBetter: boolean) => {
-  if (!previous) return { text: "No comparison", className: "text-slate-500" };
-  const change = Math.round(((current - previous) / previous) * 100);
-  const improved = lowerIsBetter ? change <= 0 : change >= 0;
-  return {
-    text: `${change <= 0 ? "↓ Down" : "↑ Up"} ${Math.abs(change)}% vs previous period`,
-    className: improved ? "text-veyra-success" : "text-veyra-danger"
-  };
 };
 
 function Unavailable({ children }: { children: string }) {
