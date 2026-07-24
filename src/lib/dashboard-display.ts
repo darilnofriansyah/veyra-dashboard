@@ -17,14 +17,19 @@ export function comparison(current: number, previous: number, lowerIsBetter: boo
 export function trendLayout(points: TrendPoint[], width: number, height: number) {
   const peak = Math.max(...points.map((point) => point.amount));
   const plotMaximum = Math.max(peak, 1);
-  const plotHeight = height - 40;
+  const bounds = { left: 48, right: width - 12, top: 12, bottom: height - 32 };
+  const plotWidth = bounds.right - bounds.left;
+  const plotHeight = bounds.bottom - bounds.top;
+  const [year, month] = points[0].date.slice(0, 7).split("-").map(Number);
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
 
   return {
     peak,
-    coordinates: points.map((point, index) => ({
+    bounds,
+    coordinates: points.map((point) => ({
       ...point,
-      x: points.length === 1 ? width / 2 : (index / (points.length - 1)) * width,
-      y: height - 20 - (point.amount / plotMaximum) * plotHeight
+      x: bounds.left + ((Number(point.date.slice(-2)) - 1) / (daysInMonth - 1)) * plotWidth,
+      y: bounds.bottom - (point.amount / plotMaximum) * plotHeight
     }))
   };
 }

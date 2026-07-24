@@ -55,10 +55,29 @@ test("keeps both data visualizations accessible and data-driven", async () => {
   assert.match(trend, /role="img"/);
   assert.match(trend, /tabIndex=\{0\}/);
   assert.match(trend, /aria-label/);
+  assert.match(trend, /role="tooltip"/);
   assert.match(trend, /className="sr-only"/);
   assert.match(trend, /No transactions for this month\./);
   assert.match(categories, /conic-gradient/);
   assert.match(categories, /role="img"/);
   assert.match(categories, /aria-label/);
   assert.match(categories, /No transactions for this month\./);
+});
+
+test("keeps transaction-derived budgets honest when transactions fail", async () => {
+  const dashboard = await readSource("src/components/overview-dashboard.tsx");
+
+  assert.match(dashboard, /transactionError \|\| budgetError\s*\?\s*<Unavailable>/);
+});
+
+test("names every budget progress bar", async () => {
+  const dashboard = await readSource("src/components/overview-dashboard.tsx");
+
+  assert.match(dashboard, /aria-label=\{`\$\{budget\.category\} budget used: \$\{budget\.percent\}%`\}/);
+});
+
+test("offers keyboard users a skip link", async () => {
+  const dashboard = await readSource("src/components/overview-dashboard.tsx");
+
+  assert.match(dashboard, /href="#overview"[^>]+>Skip to overview</);
 });

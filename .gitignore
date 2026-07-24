@@ -3,3 +3,4 @@ node_modules/
 .superpowers/
 *.tsbuildinfo
 tmp/
+screenshots/

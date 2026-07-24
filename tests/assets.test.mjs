@@ -19,4 +19,7 @@ test("keeps dashboard artwork production-ready", async () => {
   for (const path of ["public/assets/veyra-logo.png", "public/assets/veyra-mark.png"]) {
     assert.ok((await stat(path)).size > 0, `${path} must not be empty`);
   }
+
+  const logo = await sharp("public/assets/veyra-logo.png").metadata();
+  assert.ok(logo.width / logo.height > 4, "logo lockup should be cropped to its visible artwork");
 });

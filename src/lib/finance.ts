@@ -140,6 +140,8 @@ export function summarizeOverview(input: OverviewInput): OverviewSummary {
     budgets,
     recentTransactions,
     alert,
-    insight: highestCategory ? `${highestCategory.category} is your largest expense at ${highestCategory.percent}% of spending.` : "There is not enough activity to form an insight."
+    insight: highestCategory
+      ? `${highestCategory.category} ${input.period === "current" ? "is" : "was"} your largest expense at ${highestCategory.percent}% of spending.`
+      : "There is not enough activity to form an insight."
   };
 }

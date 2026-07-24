@@ -65,6 +65,14 @@ test("uses full calendar days for a completed month", () => {
   assert.equal(result.dailyAverage, Math.round(2_800_000 / 30));
 });
 
+test("uses period-aware insight copy", () => {
+  const current = summarizeOverview({ transactions, budgets, period: "current", now: "2026-07-24" });
+  const previous = summarizeOverview({ transactions, budgets, period: "previous", now: "2026-07-24" });
+
+  assert.match(current.insight, / is your largest expense /);
+  assert.match(previous.insight, / was your largest expense /);
+});
+
 test("rejects duplicate ids, invalid dates, and unsafe amounts", () => {
   assert.throws(
     () => validateOverviewInput({ transactions: [transactions[0], transactions[0]], budgets, period: "current", now: "2026-07-24" }),
