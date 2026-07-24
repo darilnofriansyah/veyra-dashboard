@@ -29,7 +29,7 @@
 - Consumes: `package.json`, `package-lock.json`, the Next.js build, and external Docker network `veyra-network`
 - Produces: container service `veyra`, internal endpoint `veyra:3000`, and local endpoint `http://127.0.0.1:3001`
 
-- [ ] **Step 1: Add the production image**
+- [x] **Step 1: Add the production image**
 
 Create `Dockerfile`:
 
@@ -61,7 +61,7 @@ EXPOSE 3000
 CMD ["npm", "start"]
 ```
 
-- [ ] **Step 2: Exclude local and development artifacts**
+- [x] **Step 2: Exclude local and development artifacts**
 
 Create `.dockerignore`:
 
@@ -75,7 +75,7 @@ tmp
 *.tsbuildinfo
 ```
 
-- [ ] **Step 3: Add the single-service Compose file**
+- [x] **Step 3: Add the single-service Compose file**
 
 Create `docker-compose.yaml`:
 
@@ -95,25 +95,25 @@ networks:
     external: true
 ```
 
-- [ ] **Step 4: Validate Compose**
+- [x] **Step 4: Validate Compose**
 
 Run: `docker compose config`
 
 Expected: exit code 0; resolved service `veyra` publishes `127.0.0.1:3001` to container port `3000` and uses external network `veyra-network`.
 
-- [ ] **Step 5: Run existing checks**
+- [x] **Step 5: Run existing checks**
 
 Run: `npm test && npm run build`
 
 Expected: exit code 0 with all Node tests passing and a successful Next.js production build.
 
-- [ ] **Step 6: Build and start the container**
+- [x] **Step 6: Build and start the container**
 
 Run: `docker compose up -d --build`
 
 Expected: exit code 0 and container `veyra` is created and started.
 
-- [ ] **Step 7: Verify the runtime**
+- [x] **Step 7: Verify the runtime**
 
 Run:
 
@@ -124,7 +124,7 @@ curl --fail --silent --show-error --output /dev/null http://127.0.0.1:3001
 
 Expected: service `veyra` is running and `curl` exits 0 after receiving HTTP 200.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add Dockerfile .dockerignore docker-compose.yaml docs/superpowers/plans/2026-07-25-veyra-local-container.md
