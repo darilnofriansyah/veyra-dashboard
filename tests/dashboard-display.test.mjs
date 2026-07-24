@@ -17,17 +17,18 @@ test("trend keeps a zero peak for accessibility and zero points inside the viewb
   const layout = trendLayout([{ date: "2026-07-01", amount: 0 }], 600, 220);
 
   assert.equal(layout.peak, 0);
-  assert.equal(layout.coordinates[0].x, 48);
+  assert.equal(layout.coordinates[0].x, layout.bounds.left);
   assert.equal(layout.coordinates[0].y, 188);
 });
 
-test("trend keeps all points inside readable chart margins", () => {
+test("trend reserves enough left margin for full IDR axis labels", () => {
   const layout = trendLayout([
     { date: "2026-07-01", amount: 100 },
     { date: "2026-07-31", amount: 200 }
   ], 600, 180);
 
-  assert.equal(layout.coordinates[0].x, 48);
+  assert.ok(layout.bounds.left >= 88);
+  assert.equal(layout.coordinates[0].x, layout.bounds.left);
   assert.equal(layout.coordinates[1].x, 588);
   assert.equal(layout.coordinates[1].y, 12);
 });

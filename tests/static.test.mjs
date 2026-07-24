@@ -46,7 +46,7 @@ test("composes the approved dashboard hierarchy and development-only fixtures", 
   assert.match(dashboard, /motion-reduce:transition-none/);
 });
 
-test("keeps both data visualizations accessible and data-driven", async () => {
+test("keeps both data visualizations accessible, data-driven, and fully labeled in IDR", async () => {
   const [trend, categories] = await Promise.all([
     readSource("src/components/spending-trend.tsx"),
     readSource("src/components/category-breakdown.tsx")
@@ -57,11 +57,22 @@ test("keeps both data visualizations accessible and data-driven", async () => {
   assert.match(trend, /aria-label/);
   assert.match(trend, /role="tooltip"/);
   assert.match(trend, /className="sr-only"/);
-  assert.match(trend, /No transactions for this month\./);
+  assert.match(trend, /formatIdr\(peak \* ratio\)/);
+  assert.doesNotMatch(trend, /compactIdr|notation:\s*"compact"/);
+  assert.match(trend, /No transactions for this period\./);
   assert.match(categories, /conic-gradient/);
   assert.match(categories, /role="img"/);
   assert.match(categories, /aria-label/);
-  assert.match(categories, /No transactions for this month\./);
+  assert.match(categories, /formatIdr\(total\)/);
+  assert.doesNotMatch(categories, /compactIdr|notation:\s*"compact"/);
+  assert.match(categories, /No transactions for this period\./);
+});
+
+test("keeps every requested empty state period-neutral", async () => {
+  const dashboard = await readSource("src/components/overview-dashboard.tsx");
+
+  assert.match(dashboard, /summary\.hasTransactions \? summary\.insight : "No transactions for this period\."/);
+  assert.doesNotMatch(dashboard, /No transactions for this month\./);
 });
 
 test("keeps transaction-derived budgets honest when transactions fail", async () => {

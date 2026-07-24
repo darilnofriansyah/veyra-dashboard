@@ -1,10 +1,8 @@
 import { formatIdr, type OverviewSummary } from "@/lib/finance";
 
 const colors = ["#00B3FF", "#3C91E6", "#A64DFF", "#6D79D8", "#8CCFF1", "#CBD5E1"];
-const compactIdr = new Intl.NumberFormat("en-ID", { notation: "compact", maximumFractionDigits: 1 });
-
 export function CategoryBreakdown({ categories }: { categories: OverviewSummary["categories"] }) {
-  if (!categories.length) return <p className="text-sm">No transactions for this month.</p>;
+  if (!categories.length) return <p className="text-sm">No transactions for this period.</p>;
   const total = categories.reduce((sum, category) => sum + category.amount, 0);
   let cursor = 0;
   const stops = categories.map((category, index) => {
@@ -16,8 +14,8 @@ export function CategoryBreakdown({ categories }: { categories: OverviewSummary[
   return (
     <div className="grid items-center gap-3 sm:grid-cols-[128px_1fr]">
       <div className="relative mx-auto grid size-32 place-items-center rounded-full" style={{ background: `conic-gradient(${stops})` }} role="img" aria-label={`Spending distribution totaling ${formatIdr(total)}`}>
-        <span aria-hidden="true" className="z-10 grid size-[44%] place-content-center rounded-full bg-white text-center text-[10px] text-slate-500">
-          IDR<strong className="block text-sm text-veyra-ink">{compactIdr.format(total)}</strong>
+        <span aria-hidden="true" className="z-10 grid size-[60%] place-content-center rounded-full bg-white px-1 text-center leading-tight text-veyra-ink">
+          <span className="block text-[8px] text-slate-500">IDR</span><strong className="block text-[11px] tracking-[-0.05em]">{formatIdr(total).replace("IDR ", "")}</strong>
         </span>
       </div>
       <ul className="space-y-1.5">{categories.map((category, index) => (

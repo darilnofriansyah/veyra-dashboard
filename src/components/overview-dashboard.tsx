@@ -168,7 +168,7 @@ function DashboardContent({ demoState }: { demoState: DemoState | null }) {
                       <td className={`p-1.5 text-right ${transaction.type === "income" ? "text-veyra-success" : ""}`}>{transaction.type === "income" ? "+" : "−"}{formatIdr(transaction.amount)}</td>
                     </tr>)}</tbody>
                   </table></div>
-                ) : <p className="text-sm">No transactions for this month.</p>}
+                ) : <p className="text-sm">No transactions for this period.</p>}
               </article>
             </section>
 
@@ -184,7 +184,7 @@ function DashboardContent({ demoState }: { demoState: DemoState | null }) {
                 </picture>
                 <div className="max-w-[52%]">
                   <h2 className="mb-3 flex items-center gap-2 text-sm font-bold"><Sparkle size={16} weight="duotone" aria-hidden="true" />Veyra</h2>
-                  {guidanceError ? <Unavailable>{guidanceError}</Unavailable> : <p className="text-sm">{summary.hasTransactions ? summary.insight : "There is not enough activity to form an insight."}</p>}
+                  {guidanceError ? <Unavailable>{guidanceError}</Unavailable> : <p className="text-sm">{summary.hasTransactions ? summary.insight : "No transactions for this period."}</p>}
                 </div>
               </article>
             </section>

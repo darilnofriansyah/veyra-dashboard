@@ -17,7 +17,7 @@ export function comparison(current: number, previous: number, lowerIsBetter: boo
 export function trendLayout(points: TrendPoint[], width: number, height: number) {
   const peak = Math.max(...points.map((point) => point.amount));
   const plotMaximum = Math.max(peak, 1);
-  const bounds = { left: 48, right: width - 12, top: 12, bottom: height - 32 };
+  const bounds = { left: 92, right: width - 12, top: 12, bottom: height - 32 };
   const plotWidth = bounds.right - bounds.left;
   const plotHeight = bounds.bottom - bounds.top;
   const [year, month] = points[0].date.slice(0, 7).split("-").map(Number);

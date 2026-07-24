@@ -1,11 +1,10 @@
 import { formatIdr, type OverviewSummary } from "@/lib/finance";
 import { trendLayout } from "@/lib/dashboard-display";
 
-const compactIdr = new Intl.NumberFormat("en-ID", { notation: "compact", maximumFractionDigits: 1 });
 const shortDate = new Intl.DateTimeFormat("en", { day: "numeric", month: "short", timeZone: "UTC" });
 
 export function SpendingTrend({ points }: { points: OverviewSummary["dailySpend"] }) {
-  if (!points.length) return <p className="text-sm">No transactions for this month.</p>;
+  if (!points.length) return <p className="text-sm">No transactions for this period.</p>;
   const width = 600;
   const height = 160;
   const { peak, bounds, coordinates } = trendLayout(points, width, height);
@@ -21,8 +20,8 @@ export function SpendingTrend({ points }: { points: OverviewSummary["dailySpend"
           return (
             <g key={ratio}>
               <line x1={bounds.left} x2={bounds.right} y1={y} y2={y} className="stroke-slate-200" strokeDasharray="3 4" />
-              <text x={bounds.left - 8} y={y + 3} textAnchor="end" className="fill-slate-500 text-[10px]">
-                {ratio ? `IDR ${compactIdr.format(peak * ratio)}` : "IDR 0"}
+              <text x={bounds.left - 8} y={y + 3} textAnchor="end" className="fill-slate-500 text-[9px]">
+                {formatIdr(peak * ratio)}
               </text>
             </g>
           );

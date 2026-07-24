@@ -4,6 +4,7 @@
 
 - Source of truth: `/home/unmeii/.codex/attachments/5d14a544-e026-4f61-8a5c-b183974d8ca0/Design 2.png`
 - Implementation capture: `/home/unmeii/apps/veyra/screenshots/veyra-overview-1440.png`
+- Empty/Last Month capture: `/home/unmeii/apps/veyra/screenshots/veyra-empty-last-month-1440.png`
 - Full side-by-side comparison: `/home/unmeii/apps/veyra/screenshots/veyra-source-vs-implementation.png`
 - Focused top comparison: `/home/unmeii/apps/veyra/screenshots/veyra-source-vs-implementation-top.png`
 - Focused lower comparison: `/home/unmeii/apps/veyra/screenshots/veyra-source-vs-implementation-lower.png`
@@ -34,6 +35,15 @@ The period, tooltip, accessible-name, failure-state, and text-scaling fixes pass
 ### Final iteration
 
 The final capture is exactly 1440 × 900 with `document.scrollHeight 900`. The complete guidance row is visible; the chart has readable axes and grid density; the portrait is clipped from the top-right like the reference; and browser diagnostics are empty. No P0, P1, or P2 mismatch remains.
+
+### Review-finding correction
+
+The prior pass was blocked by two newly identified P1 regressions until this post-fix evidence was captured:
+
+1. P1 — Visible chart values used compact `M` notation on the trend axis and donut total. Fix: use the shared full-IDR formatter for all visible monetary chart labels, widen the trend SVG left plot margin to 92px, and use a two-line full-IDR donut label so values remain readable without changing the 1440 × 900 hierarchy.
+2. P1 — In `?state=empty`, selecting Last Month left period-specific “this month” copy in the trend, category, and Veyra blocks. Fix: use “No transactions for this period.” in every empty transaction block.
+
+Post-fix Playwright captures at 1440 × 900 confirm `IDR 3.200.000`, `IDR 1.600.000`, `IDR 0`, and donut total `IDR 6.515.000`; the populated and empty/Last Month documents each remain exactly 900px tall. The inspected combined source-plus-implementation comparison at `/home/unmeii/apps/veyra/screenshots/veyra-source-vs-implementation.png` shows the full hierarchy remains in view. The empty/Last Month capture contains four period-neutral empty messages and no stale “this month” message. No P0, P1, or P2 remains.
 
 ## Fidelity review
 
