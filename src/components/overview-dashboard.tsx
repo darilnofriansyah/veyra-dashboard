@@ -166,8 +166,14 @@ function DashboardContent({ demoState }: { demoState: DemoState | null }) {
                 {guidanceError ? <Unavailable>{guidanceError}</Unavailable> : <p className="text-sm">{summary.alert && summary.alert.percent >= 80 ? `${summary.alert.category} budget is at ${summary.alert.percent}%.` : "Tracked budgets are on course."}</p>}
               </article>
               <article id="veyra-insight" className={`${panel} relative min-h-40 overflow-hidden`}>
-                <h2 className="mb-4 flex items-center gap-2 text-sm font-bold"><Sparkle size={16} weight="duotone" aria-hidden="true" />Veyra</h2>
-                {guidanceError ? <Unavailable>{guidanceError}</Unavailable> : <p className="max-w-[58%] text-sm">{summary.hasTransactions ? summary.insight : "There is not enough activity to form an insight."}</p>}
+                <picture aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-[42%] max-w-[220px]">
+                  <source srcSet="/assets/veyra-dashboard-portrait.webp" type="image/webp" />
+                  <Image src="/assets/veyra-dashboard-portrait.png" alt="" fill sizes="220px" className="object-contain object-right-bottom" />
+                </picture>
+                <div className="max-w-[58%]">
+                  <h2 className="mb-4 flex items-center gap-2 text-sm font-bold"><Sparkle size={16} weight="duotone" aria-hidden="true" />Veyra</h2>
+                  {guidanceError ? <Unavailable>{guidanceError}</Unavailable> : <p className="text-sm">{summary.hasTransactions ? summary.insight : "There is not enough activity to form an insight."}</p>}
+                </div>
               </article>
             </section>
           </>
