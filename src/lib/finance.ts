@@ -89,7 +89,6 @@ function totals(transactions: Transaction[], days: number): Totals {
 
 export function summarizeOverview(input: OverviewInput): OverviewSummary {
   validateOverviewInput(input);
-  const currentKey = monthKey(input.now);
   const selectedKey = monthKey(input.now, input.period === "previous" ? -1 : 0);
   const comparisonKey = monthKey(selectedKey + "-01", -1);
   const elapsedDays = Number(input.now.slice(-2));
@@ -121,8 +120,8 @@ export function summarizeOverview(input: OverviewInput): OverviewSummary {
   const rankBudgets = (left: BudgetSummary, right: BudgetSummary) => right.spent - left.spent || right.percent - left.percent;
   const budgets = [...allBudgets].sort(rankBudgets).slice(0, 4);
   const alert = [...allBudgets]
-    .filter((budget) => budget.percent >= 80)
-    .sort((left, right) => Number(right.percent > 100) - Number(left.percent > 100) || right.percent - left.percent)[0] ?? null;
+    .filter((budget) => budget.spent / budget.limit >= 0.8)
+    .sort((left, right) => Number(right.spent / right.limit > 1) - Number(left.spent / left.limit > 1) || right.spent / right.limit - left.spent / left.limit)[0] ?? null;
   const dailySpend = [...expenses.reduce((days, transaction) => {
     days.set(transaction.date, (days.get(transaction.date) ?? 0) + transaction.amount);
     return days;

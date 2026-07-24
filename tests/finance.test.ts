@@ -30,6 +30,36 @@ test("calculates one consistent current-month summary", () => {
   assert.equal(result.comparison.totalSpent, 2_800_000);
 });
 
+test("does not alert when raw budget usage is below 80%", () => {
+  const result = summarizeOverview({
+    transactions: [{ id: "near-threshold", date: "2026-07-01", merchant: "Store", category: "Food", amount: 796, type: "expense" }],
+    budgets: [{ category: "Food", limit: 1_000 }],
+    period: "current",
+    now: "2026-07-24"
+  });
+
+  assert.equal(result.budgets[0].percent, 80);
+  assert.equal(result.alert, null);
+});
+
+test("prioritizes a raw over-budget alert despite a rounded 100% display", () => {
+  const result = summarizeOverview({
+    transactions: [
+      { id: "at-limit", date: "2026-07-01", merchant: "Store", category: "At limit", amount: 1_000, type: "expense" },
+      { id: "over-limit", date: "2026-07-01", merchant: "Store", category: "Over limit", amount: 1_004, type: "expense" }
+    ],
+    budgets: [
+      { category: "At limit", limit: 1_000 },
+      { category: "Over limit", limit: 1_000 }
+    ],
+    period: "current",
+    now: "2026-07-24"
+  });
+
+  assert.equal(result.budgets.find((budget) => budget.category === "Over limit")?.percent, 100);
+  assert.equal(result.alert?.category, "Over limit");
+});
+
 test("uses full calendar days for a completed month", () => {
   const result = summarizeOverview({ transactions, budgets, period: "previous", now: "2026-07-24" });
   assert.equal(result.dailyAverage, Math.round(2_800_000 / 30));
