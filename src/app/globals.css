@@ -16,7 +16,8 @@
 
 @layer base {
   * { box-sizing: border-box; }
-  body { margin: 0; min-width: 320px; background: #f6f8fb; color: var(--color-veyra-ink); font-variant-numeric: tabular-nums; }
+  body { margin: 0; min-width: 320px; background: #f6f8fb; color: var(--color-veyra-ink); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
   button, select { font: inherit; }
   :focus-visible { outline: 3px solid color-mix(in srgb, var(--color-veyra-cyan) 55%, white); outline-offset: 3px; }
+  progress { border: 0; border-radius: 999px; overflow: hidden; }
 }
