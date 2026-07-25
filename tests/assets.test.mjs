@@ -23,3 +23,14 @@ test("keeps dashboard artwork production-ready", async () => {
   const logo = await sharp("public/assets/veyra-logo.png").metadata();
   assert.ok(logo.width / logo.height > 4, "logo lockup should be cropped to its visible artwork");
 });
+
+test("keeps login line art production-ready", async () => {
+  const path = "public/assets/veyra-login-line-art.webp";
+  assert.equal(existsSync(path), true, "login line art must exist");
+
+  const artwork = await sharp(path).metadata();
+  assert.ok(artwork.width >= 1000, "login line art must support desktop placement");
+  assert.ok(artwork.height >= 1400, "login line art must support portrait placement");
+  assert.equal(artwork.hasAlpha, true, "login line art must keep transparency");
+  assert.ok((await stat(path)).size < 700_000, "login line art must stay optimized");
+});
