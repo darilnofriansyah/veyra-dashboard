@@ -1,0 +1,13 @@
+services:
+  veyra:
+    build: .
+    container_name: veyra
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3000"
+    networks:
+      - veyra-network
+
+networks:
+  veyra-network:
+    external: true
