@@ -4,6 +4,7 @@ import { CheckCircle, Gauge, House, Receipt, Sparkle, TrendUp, Wallet, Warning }
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { logout } from "@/app/actions";
 import { CategoryBreakdown } from "@/components/category-breakdown";
 import { SpendingTrend } from "@/components/spending-trend";
 import { comparison } from "@/lib/dashboard-display";
@@ -78,7 +79,18 @@ export function OverviewDashboard({ now, data }: { now: string; data: OverviewLo
         </nav>
         <section aria-label="Current account" className="order-1 ml-auto flex min-w-0 items-center gap-3 xl:fixed xl:bottom-6 xl:ml-0">
           <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-veyra-navy text-xs font-semibold text-white">KR</span>
-          <div className="min-w-0"><strong className="block text-sm">Kaito Ren</strong><span className="text-xs text-slate-500">{cycleLabel}</span></div>
+          <div className="min-w-0">
+            <strong className="block text-sm">Kaito Ren</strong>
+            <span className="text-xs text-slate-500">{cycleLabel}</span>
+            <form action={logout}>
+              <button
+                type="submit"
+                className="mt-1 block text-xs font-semibold text-sky-700 transition-colors hover:text-veyra-navy motion-reduce:transition-none"
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
         </section>
       </aside>
 

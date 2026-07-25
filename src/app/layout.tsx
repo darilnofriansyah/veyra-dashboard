@@ -3,8 +3,11 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Overview · Veyra",
-  description: "Your Veyra financial overview"
+  title: {
+    default: "Veyra",
+    template: "%s · Veyra"
+  },
+  description: "Veyra financial overview"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
