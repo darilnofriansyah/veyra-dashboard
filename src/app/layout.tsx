@@ -7,7 +7,8 @@ export const metadata: Metadata = {
     default: "Veyra",
     template: "%s · Veyra"
   },
-  description: "Veyra financial overview"
+  description: "Veyra financial overview",
+  icons: { icon: "/assets/veyra-mark.png" }
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
