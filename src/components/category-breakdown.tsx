@@ -8,7 +8,7 @@ export function CategoryBreakdown({ categories }: { categories: OverviewSummary[
   const stops = categories.map((category, index) => {
     const start = cursor;
     cursor += category.percent;
-    return `${colors[index]} ${start}% ${cursor}%`;
+    return `${colors[index % colors.length]} ${start}% ${cursor}%`;
   }).join(", ");
 
   return (
@@ -20,7 +20,7 @@ export function CategoryBreakdown({ categories }: { categories: OverviewSummary[
       </div>
       <ul className="space-y-1.5">{categories.map((category, index) => (
         <li key={category.category} className="grid grid-cols-[8px_minmax(0,1fr)] items-center gap-x-2 text-xs sm:grid-cols-[8px_minmax(0,1fr)_auto]">
-          <span className="size-2 rounded-full" style={{ background: colors[index] }} />
+          <span className="size-2 rounded-full" style={{ background: colors[index % colors.length] }} />
           <span>{category.category} {category.percent}%</span>
           <strong className="col-start-2 sm:col-auto">{formatIdr(category.amount)}</strong>
         </li>

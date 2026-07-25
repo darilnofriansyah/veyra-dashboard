@@ -149,7 +149,11 @@ export function OverviewDashboard({ data }: { data: OverviewLoaderResult }) {
             <section className="mt-2.5 grid gap-2.5 xl:grid-cols-[1.6fr_1fr]">
               <article className={panel}>
                 <h2 className="mb-3 text-sm font-bold">Spending Trend</h2>
-                <SpendingTrend points={summary.dailySpend} />
+                <SpendingTrend
+                  points={summary.dailySpend}
+                  start={summary.period.start}
+                  exclusiveEnd={summary.period.end}
+                />
               </article>
               <article className={panel}>
                 <h2 className="mb-3 text-sm font-bold">Spending by Category</h2>

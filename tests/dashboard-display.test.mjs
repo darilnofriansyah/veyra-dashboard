@@ -14,7 +14,13 @@ test("comparison direction and status use the raw delta while percentage stays r
 });
 
 test("trend keeps a zero peak for accessibility and zero points inside the viewbox", () => {
-  const layout = trendLayout([{ date: "2026-07-01", amount: 0 }], 600, 220);
+  const layout = trendLayout(
+    [{ date: "2026-07-01", amount: 0 }],
+    "2026-07-01",
+    "2026-08-01",
+    600,
+    220
+  );
 
   assert.equal(layout.peak, 0);
   assert.equal(layout.coordinates[0].x, layout.bounds.left);
@@ -25,10 +31,23 @@ test("trend reserves enough left margin for full IDR axis labels", () => {
   const layout = trendLayout([
     { date: "2026-07-01", amount: 100 },
     { date: "2026-07-31", amount: 200 }
-  ], 600, 180);
+  ], "2026-07-01", "2026-08-01", 600, 180);
 
   assert.ok(layout.bounds.left >= 88);
   assert.equal(layout.coordinates[0].x, layout.bounds.left);
   assert.equal(layout.coordinates[1].x, 588);
   assert.equal(layout.coordinates[1].y, 12);
+});
+
+test("trend positions consecutive dates continuously across a month boundary", () => {
+  const layout = trendLayout([
+    { date: "2026-07-15", amount: 100 },
+    { date: "2026-07-31", amount: 200 },
+    { date: "2026-08-01", amount: 300 },
+    { date: "2026-08-14", amount: 400 }
+  ], "2026-07-15", "2026-08-15", 600, 180);
+
+  assert.equal(layout.coordinates[0].x, layout.bounds.left);
+  assert.ok(layout.coordinates[1].x < layout.coordinates[2].x);
+  assert.equal(layout.coordinates[3].x, layout.bounds.right);
 });

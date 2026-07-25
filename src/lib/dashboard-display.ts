@@ -14,21 +14,31 @@ export function comparison(current: number, previous: number, lowerIsBetter: boo
   };
 }
 
-export function trendLayout(points: TrendPoint[], width: number, height: number) {
+export function trendLayout(
+  points: TrendPoint[],
+  start: string,
+  exclusiveEnd: string,
+  width: number,
+  height: number
+) {
   const peak = Math.max(...points.map((point) => point.amount));
   const plotMaximum = Math.max(peak, 1);
   const bounds = { left: 92, right: width - 12, top: 12, bottom: height - 32 };
   const plotWidth = bounds.right - bounds.left;
   const plotHeight = bounds.bottom - bounds.top;
-  const [year, month] = points[0].date.slice(0, 7).split("-").map(Number);
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const day = 86_400_000;
+  const startTime = Date.parse(`${start}T00:00:00Z`);
+  const periodDays = (Date.parse(`${exclusiveEnd}T00:00:00Z`) - startTime) / day;
 
   return {
     peak,
     bounds,
     coordinates: points.map((point) => ({
       ...point,
-      x: bounds.left + ((Number(point.date.slice(-2)) - 1) / (daysInMonth - 1)) * plotWidth,
+      x: bounds.left
+        + ((Date.parse(`${point.date}T00:00:00Z`) - startTime) / day)
+        / Math.max(periodDays - 1, 1)
+        * plotWidth,
       y: bounds.bottom - (point.amount / plotMaximum) * plotHeight
     }))
   };

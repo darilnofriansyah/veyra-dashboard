@@ -74,30 +74,35 @@ test("posts one uncached authenticated request with configured identity", async 
     VEYRA_TELEGRAM_USER_ID: "976684739",
     VEYRA_USER_ID: "1"
   }, async () => {
-    let request: { input: string | URL | Request; init?: RequestInit } | null = null;
+    const requests: Array<{
+      input: Parameters<typeof fetch>[0];
+      init?: Parameters<typeof fetch>[1];
+    }> = [];
     const fetchImpl: typeof fetch = async (input, init) => {
-      request = { input, init };
+      requests.push({ input, init });
       return Response.json(validResponse);
     };
 
     const loaded = await loadOverview("2026-07-25", fetchImpl);
+    const [request] = requests;
 
     assert.equal(loaded.error, false);
     assert.deepEqual(loaded.data, validResponse);
-    assert.equal(String(request?.input), "http://core-api:3000/api/veyra/dashboard/overview");
-    assert.equal(request?.init?.method, "POST");
-    assert.equal(request?.init?.cache, "no-store");
-    assert.deepEqual(request?.init?.headers, {
+    assert.ok(request);
+    assert.equal(String(request.input), "http://core-api:3000/api/veyra/dashboard/overview");
+    assert.equal(request.init?.method, "POST");
+    assert.equal(request.init?.cache, "no-store");
+    assert.deepEqual(request.init?.headers, {
       "content-type": "application/json",
       "x-core-api-key": "test-key"
     });
-    assert.deepEqual(JSON.parse(String(request?.init?.body)), {
+    assert.deepEqual(JSON.parse(String(request.init?.body)), {
       telegramUserId: "976684739",
       userId: 1,
       asOfDate: "2026-07-25",
       timezone: "Asia/Jakarta"
     });
-    assert.ok(request?.init?.signal);
+    assert.ok(request.init?.signal);
   });
 });
 
@@ -134,14 +139,54 @@ test("maps network and non-success responses to one safe error result", async ()
   assert.deepEqual(unauthorized, { data: null, error: true });
 });
 
-test("rejects malformed nested financial values", async () => {
-  const malformed = structuredClone(validResponse);
-  malformed.current.totals.spent = -1;
+test("rejects malformed overview responses", async (t) => {
+  const malformedCases: Array<[string, () => Response]> = [
+    ["date", () => {
+      const body = structuredClone(validResponse);
+      body.current.period.start = "2026-02-30";
+      return Response.json(body);
+    }],
+    ["enum", () => {
+      const body = structuredClone(validResponse) as {
+        current: { recentTransactions: Array<{ type: string }> };
+      };
+      body.current.recentTransactions[0].type = "transfer";
+      return Response.json(body);
+    }],
+    ["missing required array", () => {
+      const body = structuredClone(validResponse) as Record<string, unknown>;
+      delete (body.current as Record<string, unknown>).categories;
+      return Response.json(body);
+    }],
+    ["invalid required array", () => {
+      const body = structuredClone(validResponse) as {
+        current: { budgets: unknown };
+      };
+      body.current.budgets = {};
+      return Response.json(body);
+    }],
+    ["malformed JSON", () => new Response("{", {
+      headers: { "content-type": "application/json" }
+    })],
+    ["alert", () => {
+      const body = structuredClone(validResponse) as {
+        current: { alert: unknown };
+      };
+      body.current.alert = {
+        category: "Food",
+        limit: 0,
+        spent: 1_000_000,
+        percent: 100,
+        status: "over"
+      };
+      return Response.json(body);
+    }]
+  ];
 
-  const loaded = await loadOverview(
-    "2026-07-25",
-    async () => Response.json(malformed)
-  );
-
-  assert.deepEqual(loaded, { data: null, error: true });
+  for (const [name, response] of malformedCases) {
+    await t.test(name, async () => {
+      const loaded = await loadOverview("2026-07-25", async () => response());
+      assert.deepEqual(loaded, { data: null, error: true });
+    });
+  }
 });

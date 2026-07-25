@@ -3,11 +3,19 @@ import { trendLayout } from "@/lib/dashboard-display";
 
 const shortDate = new Intl.DateTimeFormat("en", { day: "numeric", month: "short", timeZone: "UTC" });
 
-export function SpendingTrend({ points }: { points: OverviewSummary["dailySpend"] }) {
+export function SpendingTrend({
+  points,
+  start,
+  exclusiveEnd
+}: {
+  points: OverviewSummary["dailySpend"];
+  start: string;
+  exclusiveEnd: string;
+}) {
   if (!points.length) return <p className="text-sm">No transactions for this period.</p>;
   const width = 600;
   const height = 160;
-  const { peak, bounds, coordinates } = trendLayout(points, width, height);
+  const { peak, bounds, coordinates } = trendLayout(points, start, exclusiveEnd, width, height);
   const ticks = [1, 0.5, 0];
   const labelPoints = [...new Set([0, Math.floor((coordinates.length - 1) / 2), coordinates.length - 1])]
     .map((index) => coordinates[index]);
