@@ -1,16 +1,29 @@
-import { login } from "@/app/actions";
-import { EnvelopeSimple, TelegramLogo } from "@phosphor-icons/react/ssr";
+import { TelegramLogo } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
 import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "Login",
-  description: "Enter the Veyra dashboard demo"
+  description: "Sign in to your Veyra dashboard"
 };
 
 const loginButton = "flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors motion-reduce:transition-none";
 
-export default function LoginPage() {
+const loginErrors: Record<string, string> = {
+  access_denied: "This Telegram account does not have access to Veyra.",
+  telegram_login: "Telegram login couldn’t be completed. Please try again."
+};
+
+export default async function LoginPage({
+  searchParams
+}: {
+  searchParams: Promise<{ error?: string | string[] }>;
+}) {
+  const requestedError = (await searchParams).error;
+  const error = typeof requestedError === "string"
+    ? loginErrors[requestedError]
+    : null;
+
   return (
     <main className="relative min-h-dvh overflow-hidden bg-white p-4 text-veyra-ink sm:p-6">
       <Image
@@ -46,31 +59,21 @@ export default function LoginPage() {
             Secure. Intelligent. Always in control.
           </p>
 
-          <form action={login} className="mt-8">
-            <button
-              type="submit"
+          {error ? (
+            <p role="alert" className="mt-6 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </p>
+          ) : null}
+
+          <div className="mt-8">
+            <a
+              href="/auth/telegram"
               className={`${loginButton} bg-sky-600 text-white hover:bg-sky-700`}
             >
               <TelegramLogo size={18} weight="fill" aria-hidden="true" />
               Login with Telegram
-            </button>
-          </form>
-
-          <div className="my-5 flex items-center gap-3 text-xs text-slate-500">
-            <span aria-hidden="true" className="h-px flex-1 bg-veyra-line" />
-            <span>or continue with</span>
-            <span aria-hidden="true" className="h-px flex-1 bg-veyra-line" />
+            </a>
           </div>
-
-          <form action={login}>
-            <button
-              type="submit"
-              className={`${loginButton} border border-veyra-line bg-white text-veyra-ink hover:border-veyra-cyan`}
-            >
-              <EnvelopeSimple size={18} weight="regular" aria-hidden="true" />
-              Login with Email
-            </button>
-          </form>
         </section>
 
         <div

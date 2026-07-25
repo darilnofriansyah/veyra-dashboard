@@ -9,6 +9,7 @@
   "type": "module",
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
+    "jose": "^6.2.4",
     "next": "16.2.11",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"

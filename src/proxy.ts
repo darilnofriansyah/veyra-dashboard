@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server.js";
-import { DEMO_SESSION_COOKIE, hasDemoSession } from "./lib/demo-session.ts";
+import { SESSION_COOKIE, verifySessionToken } from "./lib/auth.ts";
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  const signedIn = hasDemoSession(
-    request.cookies.get(DEMO_SESSION_COOKIE)?.value
+  const signedIn = Boolean(
+    await verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value)
   );
 
   if (path === "/" && signedIn) {

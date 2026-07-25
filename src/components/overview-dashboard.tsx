@@ -41,13 +41,29 @@ function Unavailable({ children }: { children: string }) {
   );
 }
 
-export function OverviewDashboard({ data }: { data: OverviewLoaderResult }) {
+export function OverviewDashboard({
+  data,
+  viewerName
+}: {
+  data: OverviewLoaderResult;
+  viewerName: string | null;
+}) {
   const [period, setPeriod] = useState<Period>("current");
+  const accountName = viewerName ?? "Telegram user";
+  const initials = accountName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
   const summary = data.data?.[period] ?? null;
   const cycleLabel = summary
     ? formatCycle(summary.period.start, summary.period.end)
     : "Cycle unavailable";
-  const latestAlert = summary?.alert ?? null;
+  // ponytail: visible-budget fallback until Core API returns an all-budget alert.
+  const latestAlert = summary?.alert
+    ?? summary?.budgets.find((budget) => budget.status !== "on-track")
+    ?? null;
   const highestCategory = summary?.categories[0] ?? null;
   const insight = highestCategory
     ? `${highestCategory.category} ${period === "current" ? "is" : "was"} your largest expense at ${highestCategory.percent}% of spending.`
@@ -95,9 +111,9 @@ export function OverviewDashboard({ data }: { data: OverviewLoaderResult }) {
           </a>
         </nav>
         <section aria-label="Current account" className="order-1 ml-auto flex min-w-0 items-center gap-3 xl:fixed xl:bottom-6 xl:ml-0">
-          <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-veyra-navy text-xs font-semibold text-white">KR</span>
+          <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-veyra-navy text-xs font-semibold text-white">{initials}</span>
           <div className="min-w-0">
-            <strong className="block text-sm">Kaito Ren</strong>
+            <strong className="block text-sm">{accountName}</strong>
             <span className="text-xs text-slate-500">{cycleLabel}</span>
             <form action={logout}>
               <button

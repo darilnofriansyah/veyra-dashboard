@@ -1,6 +1,9 @@
 import { OverviewDashboard } from "@/components/overview-dashboard";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import { loadOverview } from "@/lib/overview-loader";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 
 export const metadata: Metadata = {
@@ -19,8 +22,13 @@ function jakartaToday() {
 
 export default async function Page() {
   await connection();
-  const asOfDate = jakartaToday();
-  const data = await loadOverview(asOfDate);
+  const session = await verifySessionToken(
+    (await cookies()).get(SESSION_COOKIE)?.value
+  );
+  if (!session) redirect("/");
 
-  return <OverviewDashboard data={data} />;
+  const asOfDate = jakartaToday();
+  const data = await loadOverview(asOfDate, session.telegramUserId);
+
+  return <OverviewDashboard data={data} viewerName={session.name} />;
 }
