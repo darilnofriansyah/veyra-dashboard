@@ -41,8 +41,21 @@ function Unavailable({ children }: { children: string }) {
   );
 }
 
-export function OverviewDashboard({ data }: { data: OverviewLoaderResult }) {
+export function OverviewDashboard({
+  data,
+  viewerName
+}: {
+  data: OverviewLoaderResult;
+  viewerName: string | null;
+}) {
   const [period, setPeriod] = useState<Period>("current");
+  const accountName = viewerName ?? "Telegram user";
+  const initials = accountName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
   const summary = data.data?.[period] ?? null;
   const cycleLabel = summary
     ? formatCycle(summary.period.start, summary.period.end)
@@ -98,9 +111,9 @@ export function OverviewDashboard({ data }: { data: OverviewLoaderResult }) {
           </a>
         </nav>
         <section aria-label="Current account" className="order-1 ml-auto flex min-w-0 items-center gap-3 xl:fixed xl:bottom-6 xl:ml-0">
-          <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-veyra-navy text-xs font-semibold text-white">KR</span>
+          <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-veyra-navy text-xs font-semibold text-white">{initials}</span>
           <div className="min-w-0">
-            <strong className="block text-sm">Kaito Ren</strong>
+            <strong className="block text-sm">{accountName}</strong>
             <span className="text-xs text-slate-500">{cycleLabel}</span>
             <form action={logout}>
               <button

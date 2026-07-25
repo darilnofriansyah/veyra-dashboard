@@ -15,8 +15,6 @@ type JsonObject = Record<string, unknown>;
 type FetchImplementation = typeof fetch;
 
 const DEFAULT_CORE_URL = "http://core-api:3000";
-const DEFAULT_TELEGRAM_USER_ID = "976684739";
-const DEFAULT_USER_ID = 1;
 const TIMEZONE = "Asia/Jakarta";
 const BUDGET_STATUSES = new Set<BudgetStatus>(["on-track", "warning", "over"]);
 const PERIOD_LABELS = new Set(["current_cycle", "previous_cycle"]);
@@ -236,14 +234,14 @@ const errorResult = (): OverviewLoaderResult => ({ data: null, error: true });
 
 export async function loadOverview(
   asOfDate: string,
+  telegramUserId: string,
   fetchImpl: FetchImplementation = fetch
 ): Promise<OverviewLoaderResult> {
   try {
     isoDate(asOfDate, "asOfDate");
+    if (!/^[1-9]\d*$/.test(telegramUserId)) return errorResult();
     const baseUrl = (process.env.NEXUS_CORE_URL ?? DEFAULT_CORE_URL).replace(/\/+$/, "");
     const apiKey = process.env.CORE_API_KEY;
-    const userId = Number(process.env.VEYRA_USER_ID ?? DEFAULT_USER_ID);
-    if (!Number.isSafeInteger(userId) || userId <= 0) return errorResult();
     const response = await fetchImpl(`${baseUrl}/api/veyra/dashboard/overview`, {
       method: "POST",
       cache: "no-store",
@@ -253,8 +251,7 @@ export async function loadOverview(
         ...(apiKey ? { "x-core-api-key": apiKey } : {})
       },
       body: JSON.stringify({
-        telegramUserId: process.env.VEYRA_TELEGRAM_USER_ID ?? DEFAULT_TELEGRAM_USER_ID,
-        userId,
+        telegramUserId,
         asOfDate,
         timezone: TIMEZONE
       })

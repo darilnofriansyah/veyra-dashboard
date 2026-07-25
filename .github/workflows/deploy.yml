@@ -61,7 +61,7 @@ jobs:
 
           git -C "$repo" switch main
           git -C "$repo" pull --ff-only origin main
-          docker compose --project-directory "$repo" --project-name veyra up -d --build
+          docker compose --env-file /home/unmeii/apps/.env --project-directory "$repo" --project-name veyra up -d --build
 
           for attempt in {1..12}; do
             if curl --fail --silent --show-error --output /dev/null http://127.0.0.1:3001; then
@@ -70,6 +70,6 @@ jobs:
             sleep 5
           done
 
-          docker compose --project-directory "$repo" --project-name veyra ps
+          docker compose --env-file /home/unmeii/apps/.env --project-directory "$repo" --project-name veyra ps
           exit 1
           DEPLOY

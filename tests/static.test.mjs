@@ -33,8 +33,9 @@ test("loads one server-side Nexus Core overview and passes it to the client", as
 
   assert.match(page, /await connection\(\)/);
   assert.match(page, /function jakartaToday\(\)/);
-  assert.match(page, /await loadOverview\(asOfDate\)/);
-  assert.match(page, /<OverviewDashboard data=\{data\}/);
+  assert.match(page, /verifySessionToken/);
+  assert.match(page, /await loadOverview\(asOfDate, session\.telegramUserId\)/);
+  assert.match(page, /<OverviewDashboard data=\{data\} viewerName=\{session\.name\}/);
   assert.match(loader, /\/api\/veyra\/dashboard\/overview/);
   assert.match(loader, /cache:\s*"no-store"/);
   assert.match(loader, /AbortSignal\.timeout\(5_000\)/);
@@ -50,6 +51,7 @@ test("keeps Core API credentials and identity server-only", async () => {
 
   assert.match(loader, /process\.env\.CORE_API_KEY/);
   assert.match(loader, /"x-core-api-key"/);
+  assert.doesNotMatch(loader, /VEYRA_TELEGRAM_USER_ID|VEYRA_USER_ID/);
   assert.doesNotMatch(`${loader}\n${dashboard}`, /NEXT_PUBLIC_/);
   assert.doesNotMatch(dashboard, /CORE_API_KEY|NEXUS_CORE_URL|fetch\(/);
 });
@@ -149,25 +151,43 @@ test("offers keyboard users a skip link", async () => {
   assert.match(dashboard, /href="#overview"[^>]+>Skip to overview</);
 });
 
-test("documents and supplies the server-side Nexus Core environment", async () => {
-  const [example, compose] = await Promise.all([
+test("offers only real Telegram login and safe provider errors", async () => {
+  const [loginPage, actions] = await Promise.all([
+    readSource("src/app/page.tsx"),
+    readSource("src/app/actions.ts")
+  ]);
+
+  assert.match(loginPage, /href="\/auth\/telegram"/);
+  assert.match(loginPage, /Login with Telegram/);
+  assert.match(loginPage, /access_denied/);
+  assert.match(loginPage, /telegram_login/);
+  assert.doesNotMatch(loginPage, /Login with Email|action=\{login\}/);
+  assert.doesNotMatch(actions, /DEMO_SESSION|export async function login/);
+});
+
+test("documents and supplies the production auth environment", async () => {
+  const [example, compose, deploy] = await Promise.all([
     readSource(".env.example"),
-    readSource("docker-compose.yaml")
+    readSource("docker-compose.yaml"),
+    readSource(".github/workflows/deploy.yml")
   ]);
 
   for (const name of [
+    "APP_URL",
+    "TELEGRAM_CLIENT_ID",
+    "TELEGRAM_CLIENT_SECRET",
+    "AUTH_SECRET",
     "NEXUS_CORE_URL",
-    "CORE_API_KEY",
-    "VEYRA_TELEGRAM_USER_ID",
-    "VEYRA_USER_ID"
+    "CORE_API_KEY"
   ]) {
     assert.match(example, new RegExp(`^${name}=`, "m"));
     assert.match(compose, new RegExp(name));
   }
 
-  assert.match(example, /^VEYRA_TELEGRAM_USER_ID=976684739$/m);
-  assert.match(example, /^VEYRA_USER_ID=1$/m);
+  assert.match(example, /^APP_URL=https:\/\/veyra\.darilnofriansyah\.my\.id$/m);
   assert.match(compose, /http:\/\/core-api:3000/);
   assert.match(compose, /veyra-network/);
+  assert.match(deploy, /docker compose --env-file \/home\/unmeii\/apps\/\.env/);
+  assert.doesNotMatch(`${example}\n${compose}`, /VEYRA_TELEGRAM_USER_ID|VEYRA_USER_ID/);
   assert.doesNotMatch(example, /NEXT_PUBLIC_/);
 });

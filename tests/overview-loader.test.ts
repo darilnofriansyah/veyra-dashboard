@@ -70,9 +70,7 @@ function withEnvironment(values: Record<string, string | undefined>, run: () => 
 test("posts one uncached authenticated request with configured identity", async () => {
   await withEnvironment({
     NEXUS_CORE_URL: "http://core-api:3000/",
-    CORE_API_KEY: "test-key",
-    VEYRA_TELEGRAM_USER_ID: "976684739",
-    VEYRA_USER_ID: "1"
+    CORE_API_KEY: "test-key"
   }, async () => {
     const requests: Array<{
       input: Parameters<typeof fetch>[0];
@@ -83,7 +81,11 @@ test("posts one uncached authenticated request with configured identity", async 
       return Response.json(validResponse);
     };
 
-    const loaded = await loadOverview("2026-07-25", fetchImpl);
+    const loaded = await loadOverview(
+      "2026-07-25",
+      "976684739",
+      fetchImpl
+    );
     const [request] = requests;
 
     assert.equal(loaded.error, false);
@@ -98,7 +100,6 @@ test("posts one uncached authenticated request with configured identity", async 
     });
     assert.deepEqual(JSON.parse(String(request.init?.body)), {
       telegramUserId: "976684739",
-      userId: 1,
       asOfDate: "2026-07-25",
       timezone: "Asia/Jakarta"
     });
@@ -106,32 +107,31 @@ test("posts one uncached authenticated request with configured identity", async 
   });
 });
 
-test("uses the requested default user identifiers", async () => {
-  await withEnvironment({
-    NEXUS_CORE_URL: "http://core-api:3000",
-    CORE_API_KEY: undefined,
-    VEYRA_TELEGRAM_USER_ID: undefined,
-    VEYRA_USER_ID: undefined
-  }, async () => {
-    let body: Record<string, unknown> = {};
-    const fetchImpl: typeof fetch = async (_input, init) => {
-      body = JSON.parse(String(init?.body));
-      return Response.json(validResponse);
-    };
+test("rejects an invalid session identity without calling Core", async () => {
+  let requests = 0;
+  const fetchImpl: typeof fetch = async () => {
+    requests += 1;
+    return Response.json(validResponse);
+  };
 
-    await loadOverview("2026-07-25", fetchImpl);
-
-    assert.equal(body.telegramUserId, "976684739");
-    assert.equal(body.userId, 1);
-  });
+  assert.deepEqual(
+    await loadOverview("2026-07-25", "invalid", fetchImpl),
+    { data: null, error: true }
+  );
+  assert.equal(requests, 0);
 });
 
 test("maps network and non-success responses to one safe error result", async () => {
-  const network = await loadOverview("2026-07-25", async () => {
-    throw new Error("connection failed");
-  });
+  const network = await loadOverview(
+    "2026-07-25",
+    "976684739",
+    async () => {
+      throw new Error("connection failed");
+    }
+  );
   const unauthorized = await loadOverview(
     "2026-07-25",
+    "976684739",
     async () => new Response("secret upstream response", { status: 401 })
   );
 
@@ -146,6 +146,7 @@ test("accepts overview responses while the Core API alert field is pending", asy
 
   const loaded = await loadOverview(
     "2026-07-25",
+    "976684739",
     async () => Response.json(body, { status: 201 })
   );
 
@@ -200,7 +201,11 @@ test("rejects malformed overview responses", async (t) => {
 
   for (const [name, response] of malformedCases) {
     await t.test(name, async () => {
-      const loaded = await loadOverview("2026-07-25", async () => response());
+      const loaded = await loadOverview(
+        "2026-07-25",
+        "976684739",
+        async () => response()
+      );
       assert.deepEqual(loaded, { data: null, error: true });
     });
   }
