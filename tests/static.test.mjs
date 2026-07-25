@@ -6,7 +6,7 @@ const readSource = (path) => readFile(path, "utf8").catch(() => "");
 
 test("uses App Router, Tailwind v4, and no unfinished dashboard destinations", async () => {
   const [page, dashboard, css, postcss] = await Promise.all([
-    readFile("src/app/page.tsx", "utf8"),
+    readFile("src/app/dashboard/page.tsx", "utf8"),
     readFile("src/components/overview-dashboard.tsx", "utf8"),
     readFile("src/app/globals.css", "utf8"),
     readFile("postcss.config.mjs", "utf8")
@@ -25,10 +25,10 @@ test("uses App Router, Tailwind v4, and no unfinished dashboard destinations", a
 
 test("loads one request-time server date and passes settled data into the client", async () => {
   const [page, dashboard, loader, loading] = await Promise.all([
-    readSource("src/app/page.tsx"),
+    readSource("src/app/dashboard/page.tsx"),
     readSource("src/components/overview-dashboard.tsx"),
     readSource("src/lib/overview-loader.ts"),
-    readSource("src/app/loading.tsx")
+    readSource("src/app/dashboard/loading.tsx")
   ]);
 
   assert.match(page, /await connection\(\)/);
@@ -48,7 +48,7 @@ test("loads one request-time server date and passes settled data into the client
 test("composes the approved dashboard hierarchy and development-only fixtures", async () => {
   const [dashboard, page, loader] = await Promise.all([
     readSource("src/components/overview-dashboard.tsx"),
-    readSource("src/app/page.tsx"),
+    readSource("src/app/dashboard/page.tsx"),
     readSource("src/lib/overview-loader.ts")
   ]);
 
@@ -128,7 +128,7 @@ test("names every budget progress bar", async () => {
 });
 
 test("keeps the loading header responsive and announces the pending overview", async () => {
-  const loading = await readSource("src/app/loading.tsx");
+  const loading = await readSource("src/app/dashboard/loading.tsx");
 
   assert.match(loading, /<header className="mb-2\.5 flex flex-wrap items-start justify-between gap-2\.5">/);
   assert.match(loading, /aria-label="Loading overview…"/);
