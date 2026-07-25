@@ -147,3 +147,26 @@ test("offers keyboard users a skip link", async () => {
 
   assert.match(dashboard, /href="#overview"[^>]+>Skip to overview</);
 });
+
+test("documents and supplies the server-side Nexus Core environment", async () => {
+  const [example, compose] = await Promise.all([
+    readSource(".env.example"),
+    readSource("docker-compose.yaml")
+  ]);
+
+  for (const name of [
+    "NEXUS_CORE_URL",
+    "CORE_API_KEY",
+    "VEYRA_TELEGRAM_USER_ID",
+    "VEYRA_USER_ID"
+  ]) {
+    assert.match(example, new RegExp(`^${name}=`, "m"));
+    assert.match(compose, new RegExp(name));
+  }
+
+  assert.match(example, /^VEYRA_TELEGRAM_USER_ID=976684739$/m);
+  assert.match(example, /^VEYRA_USER_ID=1$/m);
+  assert.match(compose, /http:\/\/core-api:3000/);
+  assert.match(compose, /veyra-network/);
+  assert.doesNotMatch(example, /NEXT_PUBLIC_/);
+});
