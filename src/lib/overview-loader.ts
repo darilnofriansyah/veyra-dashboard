@@ -205,7 +205,7 @@ function parsePeriodOverview(value: unknown, name: string): PeriodOverview {
         };
       }
     ),
-    alert: item.alert === null
+    alert: item.alert === undefined || item.alert === null
       ? null
       : parseBudget(item.alert, `${name}.alert`)
   };

@@ -47,7 +47,10 @@ export function OverviewDashboard({ data }: { data: OverviewLoaderResult }) {
   const cycleLabel = summary
     ? formatCycle(summary.period.start, summary.period.end)
     : "Cycle unavailable";
-  const latestAlert = summary?.alert ?? null;
+  // ponytail: visible-budget fallback until Core API returns an all-budget alert.
+  const latestAlert = summary?.alert
+    ?? summary?.budgets.find((budget) => budget.status !== "on-track")
+    ?? null;
   const highestCategory = summary?.categories[0] ?? null;
   const insight = highestCategory
     ? `${highestCategory.category} ${period === "current" ? "is" : "was"} your largest expense at ${highestCategory.percent}% of spending.`

@@ -86,6 +86,7 @@ test("uses raw budget status for rows, accessibility, and alert semantics", asyn
   assert.match(dashboard, /statusLabel\[budget\.status\]/);
   assert.match(dashboard, /\{budget\.percent\}% · \{statusLabel\[budget\.status\]\}/);
   assert.match(dashboard, /latestAlert\.status/);
+  assert.match(dashboard, /summary\?\.alert\s*\?\?\s*summary\?\.budgets\.find/);
   assert.doesNotMatch(dashboard, /summary\.alert\.percent\s*>=\s*80/);
   assert.doesNotMatch(finance, /right\.percent\s*-\s*left\.percent/);
 });

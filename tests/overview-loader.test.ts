@@ -139,6 +139,21 @@ test("maps network and non-success responses to one safe error result", async ()
   assert.deepEqual(unauthorized, { data: null, error: true });
 });
 
+test("accepts overview responses while the Core API alert field is pending", async () => {
+  const body = structuredClone(validResponse) as Record<string, unknown>;
+  delete (body.current as Record<string, unknown>).alert;
+  delete (body.previous as Record<string, unknown>).alert;
+
+  const loaded = await loadOverview(
+    "2026-07-25",
+    async () => Response.json(body, { status: 201 })
+  );
+
+  assert.equal(loaded.error, false);
+  assert.equal(loaded.data?.current.alert, null);
+  assert.equal(loaded.data?.previous.alert, null);
+});
+
 test("rejects malformed overview responses", async (t) => {
   const malformedCases: Array<[string, () => Response]> = [
     ["date", () => {
