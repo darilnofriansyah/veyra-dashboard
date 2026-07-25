@@ -1,5 +1,5 @@
 import { OverviewDashboard } from "@/components/overview-dashboard";
-import { loadOverview, type DemoState } from "@/lib/overview-loader";
+import { loadOverview } from "@/lib/overview-loader";
 import type { Metadata } from "next";
 import { connection } from "next/server";
 
@@ -17,16 +17,10 @@ function jakartaToday() {
   }).format(new Date());
 }
 
-export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+export default async function Page() {
   await connection();
-  const params = await searchParams;
-  const requestedState = Array.isArray(params.state) ? params.state[0] : params.state;
-  const demoState = process.env.NODE_ENV === "development"
-    && ["empty", "budget-error", "transaction-error", "error"].includes(requestedState ?? "")
-    ? requestedState as DemoState
-    : null;
-  const now = jakartaToday();
-  const data = await loadOverview(now, demoState);
+  const asOfDate = jakartaToday();
+  const data = await loadOverview(asOfDate);
 
-  return <OverviewDashboard now={now} data={data} />;
+  return <OverviewDashboard data={data} />;
 }

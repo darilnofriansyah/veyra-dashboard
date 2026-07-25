@@ -3,12 +3,12 @@
 import { CheckCircle, Gauge, House, Receipt, Sparkle, TrendUp, Wallet, Warning } from "@phosphor-icons/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { logout } from "@/app/actions";
 import { CategoryBreakdown } from "@/components/category-breakdown";
 import { SpendingTrend } from "@/components/spending-trend";
 import { comparison } from "@/lib/dashboard-display";
-import { formatIdr, summarizeOverview, type BudgetStatus, type Period } from "@/lib/finance";
+import { formatIdr, type BudgetStatus, type Period } from "@/lib/finance";
 import type { OverviewLoaderResult } from "@/lib/overview-loader";
 
 const panel = "min-w-0 rounded-veyra border border-veyra-line bg-white p-3";
@@ -18,14 +18,17 @@ const retry = "mt-3 inline-block rounded-lg border border-veyra-line px-3 py-2 t
 const transactionDate = new Intl.DateTimeFormat("en", { day: "numeric", month: "short", timeZone: "UTC" });
 const statusLabel: Record<BudgetStatus, string> = { "on-track": "On track", warning: "Warning", over: "Over budget" };
 
-const formatCycle = (selectedPeriod: Period, today: string) => {
-  const [year, month] = today.slice(0, 7).split("-").map(Number);
-  const selected = new Date(Date.UTC(year, month - 1 + (selectedPeriod === "previous" ? -1 : 0), 1));
-  const selectedYear = selected.getUTCFullYear();
-  const selectedMonth = selected.getUTCMonth();
-  const lastDay = new Date(Date.UTC(selectedYear, selectedMonth + 1, 0)).getUTCDate();
-  const monthName = new Intl.DateTimeFormat("en", { month: "short", timeZone: "UTC" }).format(selected);
-  return `1–${lastDay} ${monthName} ${selectedYear}`;
+const cycleDate = new Intl.DateTimeFormat("en", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC"
+});
+
+const formatCycle = (start: string, exclusiveEnd: string) => {
+  const end = new Date(`${exclusiveEnd}T00:00:00Z`);
+  end.setUTCDate(end.getUTCDate() - 1);
+  return `${cycleDate.format(new Date(`${start}T00:00:00Z`))}–${cycleDate.format(end)}`;
 };
 
 function Unavailable({ children }: { children: string }) {
@@ -38,33 +41,47 @@ function Unavailable({ children }: { children: string }) {
   );
 }
 
-export function OverviewDashboard({ now, data }: { now: string; data: OverviewLoaderResult }) {
+export function OverviewDashboard({ data }: { data: OverviewLoaderResult }) {
   const [period, setPeriod] = useState<Period>("current");
-  const summary = useMemo(
-    () => summarizeOverview({
-      transactions: data.transactions.data ?? [],
-      budgets: data.budgets.data ?? [],
-      knownCategories: data.knownCategories,
-      period,
-      now
-    }),
-    [data, period, now]
-  );
-  const cycleLabel = formatCycle(period, now);
-  const transactionError = data.transactions.error;
-  const budgetError = data.budgets.error;
-  const guidanceError = transactionError
-    ? "Transaction data couldn’t be loaded."
-    : budgetError
-      ? "Budget data couldn’t be loaded."
-      : null;
-  const latestAlert = guidanceError ? null : summary.alert;
-  const metrics = [
-    { label: "Total Spent", value: summary.totalSpent, previous: summary.comparison.totalSpent, lowerIsBetter: true, icon: Receipt },
-    { label: "Total Income", value: summary.totalIncome, previous: summary.comparison.totalIncome, lowerIsBetter: false, icon: Wallet },
-    { label: "Net Cashflow", value: summary.netCashflow, previous: summary.comparison.netCashflow, lowerIsBetter: false, icon: TrendUp },
-    { label: "Daily Average Spend", value: summary.dailyAverage, previous: summary.comparison.dailyAverage, lowerIsBetter: true, icon: Gauge }
-  ];
+  const summary = data.data?.[period] ?? null;
+  const cycleLabel = summary
+    ? formatCycle(summary.period.start, summary.period.end)
+    : "Cycle unavailable";
+  const latestAlert = summary?.alert ?? null;
+  const highestCategory = summary?.categories[0] ?? null;
+  const insight = highestCategory
+    ? `${highestCategory.category} ${period === "current" ? "is" : "was"} your largest expense at ${highestCategory.percent}% of spending.`
+    : "There is not enough activity to form an insight.";
+  const metrics = summary ? [
+    {
+      label: "Total Spent",
+      value: summary.totals.spent,
+      previous: summary.comparison.spent,
+      lowerIsBetter: true,
+      icon: Receipt
+    },
+    {
+      label: "Total Income",
+      value: summary.totals.income,
+      previous: summary.comparison.income,
+      lowerIsBetter: false,
+      icon: Wallet
+    },
+    {
+      label: "Net Cashflow",
+      value: summary.totals.netCashflow,
+      previous: summary.comparison.netCashflow,
+      lowerIsBetter: false,
+      icon: TrendUp
+    },
+    {
+      label: "Daily Average Spend",
+      value: summary.totals.dailyAverage,
+      previous: summary.comparison.dailyAverage,
+      lowerIsBetter: true,
+      icon: Gauge
+    }
+  ] : [];
 
   return (
     <div className="min-h-dvh bg-[#f6f8fb] text-veyra-ink xl:grid xl:grid-cols-[216px_1fr]">
@@ -99,25 +116,21 @@ export function OverviewDashboard({ now, data }: { now: string; data: OverviewLo
           <div><h1 className="text-2xl font-bold">Overview</h1><p className="mt-1 text-sm text-slate-500">Here’s your financial summary.</p></div>
           <label><span className="sr-only">Period</span>
             <select value={period} onChange={(event) => setPeriod(event.target.value as Period)} className="block rounded-lg border border-veyra-line bg-white px-3 py-2 text-sm text-veyra-ink transition-colors motion-reduce:transition-none">
-              <option value="current">This Month</option>
-              <option value="previous">Last Month</option>
+              <option value="current">Current Cycle</option>
+              <option value="previous">Previous Cycle</option>
             </select>
           </label>
         </header>
-        <output className="sr-only" aria-live="polite">{period === "current" ? "This Month" : "Last Month"} selected.</output>
+        <output className="sr-only" aria-live="polite">{period === "current" ? "Current Cycle" : "Previous Cycle"} selected.</output>
 
-        {transactionError && budgetError ? (
+        {data.error || !summary ? (
           <section className={panel} aria-label="Financial summary error">
             <Unavailable>Your financial summary couldn’t be loaded.</Unavailable>
           </section>
         ) : (
           <>
             <section aria-label="Financial health" className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
-              {transactionError ? (
-                <article className={`${panel} md:col-span-2 xl:col-span-4`}>
-                  <Unavailable>Transaction data couldn’t be loaded.</Unavailable>
-                </article>
-              ) : metrics.map((metric) => {
+              {metrics.map((metric) => {
                 const delta = comparison(metric.value, metric.previous, metric.lowerIsBetter);
                 const Icon = metric.icon;
                 return (
@@ -136,18 +149,18 @@ export function OverviewDashboard({ now, data }: { now: string; data: OverviewLo
             <section className="mt-2.5 grid gap-2.5 xl:grid-cols-[1.6fr_1fr]">
               <article className={panel}>
                 <h2 className="mb-3 text-sm font-bold">Spending Trend</h2>
-                {transactionError ? <Unavailable>Transaction data couldn’t be loaded.</Unavailable> : <SpendingTrend points={summary.dailySpend} />}
+                <SpendingTrend points={summary.dailySpend} />
               </article>
               <article className={panel}>
                 <h2 className="mb-3 text-sm font-bold">Spending by Category</h2>
-                {transactionError ? <Unavailable>Transaction data couldn’t be loaded.</Unavailable> : <CategoryBreakdown categories={summary.categories} />}
+                <CategoryBreakdown categories={summary.categories} />
               </article>
             </section>
 
             <section className="mt-2.5 grid gap-2.5 xl:grid-cols-2">
               <article className={panel}>
                 <h2 className="mb-3 text-sm font-bold">Budget Status</h2>
-                {transactionError || budgetError ? <Unavailable>{guidanceError!}</Unavailable> : summary.budgets.map((budget) => (
+                {summary.budgets.map((budget) => (
                   <div key={budget.category} data-status={budget.status} className="grid grid-cols-[1fr_auto] gap-1 border-b border-veyra-line py-1">
                     <div><strong className="text-sm">{budget.category}</strong><span className="block text-xs text-slate-500">{formatIdr(budget.spent)} / {formatIdr(budget.limit)}</span></div>
                     <span className={`text-xs ${budget.status === "over" ? "text-veyra-danger" : budget.status === "warning" ? "text-veyra-warning" : "text-slate-600"}`}>{budget.percent}% · {statusLabel[budget.status]}</span>
@@ -163,11 +176,11 @@ export function OverviewDashboard({ now, data }: { now: string; data: OverviewLo
               </article>
               <article className={panel}>
                 <h2 className="mb-3 text-sm font-bold">Recent Transactions</h2>
-                {transactionError ? <Unavailable>Transaction data couldn’t be loaded.</Unavailable> : summary.recentTransactions.length ? (
+                {summary.recentTransactions.length ? (
                   <div className="overflow-x-auto"><table className="w-full text-left text-xs">
                     <thead className="text-slate-500"><tr><th scope="col" className="p-1.5">Date</th><th scope="col" className="p-1.5">Merchant</th><th scope="col" className="p-1.5">Category</th><th scope="col" className="p-1.5 text-right">Amount</th></tr></thead>
                     <tbody>{summary.recentTransactions.map((transaction) => <tr key={transaction.id} className="border-t border-veyra-line">
-                      <td className="p-1.5"><time dateTime={transaction.date}>{transactionDate.format(new Date(`${transaction.date}T00:00:00Z`))}</time></td><td className="p-1.5">{transaction.merchant}</td><td className="p-1.5">{transaction.category}</td>
+                      <td className="p-1.5"><time dateTime={transaction.date}>{transactionDate.format(new Date(`${transaction.date}T00:00:00Z`))}</time></td><td className="p-1.5">{transaction.merchant ?? "Unknown merchant"}</td><td className="p-1.5">{transaction.category ?? "Uncategorized"}</td>
                       <td className={`p-1.5 text-right ${transaction.type === "income" ? "text-veyra-success" : ""}`}>{transaction.type === "income" ? "+" : "−"}{formatIdr(transaction.amount)}</td>
                     </tr>)}</tbody>
                   </table></div>
@@ -176,14 +189,14 @@ export function OverviewDashboard({ now, data }: { now: string; data: OverviewLo
             </section>
 
             <section className="mt-2.5 grid gap-2.5 xl:grid-cols-2">
-              <article className={`${panel} border-t-[3px] ${latestAlert ? "border-t-veyra-warning" : guidanceError ? "border-t-veyra-line" : "border-t-veyra-success"}`}>
+              <article className={`${panel} border-t-[3px] ${latestAlert ? "border-t-veyra-warning" : "border-t-veyra-success"}`}>
                 <h2 className="mb-3 flex items-center gap-2 text-sm font-bold">
                   {latestAlert
                     ? <Warning size={16} weight="duotone" aria-hidden="true" />
-                    : !guidanceError && <CheckCircle size={16} weight="duotone" aria-hidden="true" className="text-veyra-success" />}
+                    : <CheckCircle size={16} weight="duotone" aria-hidden="true" className="text-veyra-success" />}
                   Latest Alert
                 </h2>
-                {guidanceError ? <Unavailable>{guidanceError}</Unavailable> : <p className="text-sm">{latestAlert ? `${latestAlert.category} budget ${latestAlert.status === "over" ? "is over its limit at" : "is at"} ${latestAlert.percent}%.` : "Tracked budgets are on course."}</p>}
+                <p className="text-sm">{latestAlert ? `${latestAlert.category} budget ${latestAlert.status === "over" ? "is over its limit at" : "is at"} ${latestAlert.percent}%.` : "Tracked budgets are on course."}</p>
               </article>
               <article id="veyra-insight" className={`${panel} relative min-h-40 overflow-hidden`}>
                 <picture aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-[48%] max-w-[280px]">
@@ -192,7 +205,7 @@ export function OverviewDashboard({ now, data }: { now: string; data: OverviewLo
                 </picture>
                 <div className="max-w-[52%]">
                   <h2 className="mb-3 flex items-center gap-2 text-sm font-bold"><Sparkle size={16} weight="duotone" aria-hidden="true" />Veyra</h2>
-                  {guidanceError ? <Unavailable>{guidanceError}</Unavailable> : <p className="text-sm">{summary.hasTransactions ? summary.insight : "No transactions for this period."}</p>}
+                  <p className="text-sm">{summary.hasTransactions ? insight : "No transactions for this period."}</p>
                 </div>
               </article>
             </section>

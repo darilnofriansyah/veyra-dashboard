@@ -44,6 +44,8 @@ export interface PeriodOverview {
   alert: BudgetSummary | null;
 }
 
+export type OverviewSummary = PeriodOverview;
+
 export interface OverviewResponse {
   user: {
     id: string;
