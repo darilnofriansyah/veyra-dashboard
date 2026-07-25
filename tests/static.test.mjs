@@ -13,8 +13,9 @@ test("uses App Router, Tailwind v4, and no unfinished dashboard destinations", a
   ]);
   assert.match(page, /OverviewDashboard/);
   assert.match(dashboard, /"use client"/);
-  assert.match(dashboard, /This Month/);
-  assert.match(dashboard, /Last Month/);
+  assert.match(dashboard, /Current Cycle/);
+  assert.match(dashboard, /Previous Cycle/);
+  assert.doesNotMatch(dashboard, /This Month|Last Month/);
   assert.match(css, /@import "tailwindcss"/);
   assert.match(css, /@theme/);
   assert.match(postcss, /@tailwindcss\/postcss/);
@@ -23,34 +24,38 @@ test("uses App Router, Tailwind v4, and no unfinished dashboard destinations", a
   }
 });
 
-test("loads one request-time server date and passes settled data into the client", async () => {
-  const [page, dashboard, loader, loading] = await Promise.all([
+test("loads one server-side Nexus Core overview and passes it to the client", async () => {
+  const [page, dashboard, loader] = await Promise.all([
     readSource("src/app/dashboard/page.tsx"),
     readSource("src/components/overview-dashboard.tsx"),
-    readSource("src/lib/overview-loader.ts"),
-    readSource("src/app/dashboard/loading.tsx")
+    readSource("src/lib/overview-loader.ts")
   ]);
 
   assert.match(page, /await connection\(\)/);
-  assert.match(page, /searchParams:\s*Promise/);
-  assert.match(page, /await searchParams/);
   assert.match(page, /function jakartaToday\(\)/);
-  assert.match(page, /<OverviewDashboard now=\{now\} data=\{data\}/);
-  assert.match(loader, /Promise\.allSettled/);
-  assert.match(loader, /createFixtureTransactions/);
-  assert.match(loader, /createFixtureBudgets/);
-  assert.match(dashboard, /router\.refresh\(\)/);
-  assert.doesNotMatch(dashboard, /jakartaToday|createFixtureData|useSearchParams/);
-  assert.match(loading, /aria-busy="true"/);
-  assert.match(loading, /Loading overview/);
+  assert.match(page, /await loadOverview\(asOfDate\)/);
+  assert.match(page, /<OverviewDashboard data=\{data\}/);
+  assert.match(loader, /\/api\/veyra\/dashboard\/overview/);
+  assert.match(loader, /cache:\s*"no-store"/);
+  assert.match(loader, /AbortSignal\.timeout\(5_000\)/);
+  assert.doesNotMatch(`${page}\n${dashboard}`, /useSearchParams|DemoState|requestedState/);
+  assert.doesNotMatch(loader, /createFixtureTransactions|createFixtureBudgets/);
 });
 
-test("composes the approved dashboard hierarchy and development-only fixtures", async () => {
-  const [dashboard, page, loader] = await Promise.all([
-    readSource("src/components/overview-dashboard.tsx"),
-    readSource("src/app/dashboard/page.tsx"),
-    readSource("src/lib/overview-loader.ts")
+test("keeps Core API credentials and identity server-only", async () => {
+  const [loader, dashboard] = await Promise.all([
+    readSource("src/lib/overview-loader.ts"),
+    readSource("src/components/overview-dashboard.tsx")
   ]);
+
+  assert.match(loader, /process\.env\.CORE_API_KEY/);
+  assert.match(loader, /"x-core-api-key"/);
+  assert.doesNotMatch(`${loader}\n${dashboard}`, /NEXT_PUBLIC_/);
+  assert.doesNotMatch(dashboard, /CORE_API_KEY|NEXUS_CORE_URL|fetch\(/);
+});
+
+test("composes the approved dashboard hierarchy", async () => {
+  const dashboard = await readSource("src/components/overview-dashboard.tsx");
 
   for (const section of [
     "Financial health",
@@ -63,10 +68,9 @@ test("composes the approved dashboard hierarchy and development-only fixtures", 
   ]) {
     assert.match(dashboard, new RegExp(section));
   }
-  for (const state of ["empty", "budget-error", "transaction-error", "error"]) {
-    assert.match(`${page}\n${loader}`, new RegExp(`"${state}"`));
-  }
-  assert.match(`${page}\n${loader}`, /process\.env\.NODE_ENV === "development"/);
+  assert.match(dashboard, /Current Cycle/);
+  assert.match(dashboard, /Previous Cycle/);
+  assert.doesNotMatch(dashboard, /This Month|Last Month/);
   assert.equal([...dashboard.matchAll(/useState(?:<[^>]+>)?\(/g)].length, 1);
   assert.match(dashboard, /useState<Period>\(/);
   assert.match(dashboard, /motion-reduce:transition-none/);
@@ -111,14 +115,17 @@ test("keeps both data visualizations accessible, data-driven, and fully labeled 
 test("keeps every requested empty state period-neutral", async () => {
   const dashboard = await readSource("src/components/overview-dashboard.tsx");
 
-  assert.match(dashboard, /summary\.hasTransactions \? summary\.insight : "No transactions for this period\."/);
+  assert.match(dashboard, /summary\.hasTransactions \? insight : "No transactions for this period\."/);
   assert.doesNotMatch(dashboard, /No transactions for this month\./);
 });
 
-test("keeps transaction-derived budgets honest when transactions fail", async () => {
+test("renders one aggregate retry state for a failed overview", async () => {
   const dashboard = await readSource("src/components/overview-dashboard.tsx");
 
-  assert.match(dashboard, /transactionError \|\| budgetError\s*\?\s*<Unavailable>/);
+  assert.match(dashboard, /data\.error \|\| !summary/);
+  assert.match(dashboard, /Your financial summary couldn’t be loaded\./);
+  assert.match(dashboard, /router\.refresh\(\)/);
+  assert.doesNotMatch(dashboard, /transactionError|budgetError|guidanceError/);
 });
 
 test("names every budget progress bar", async () => {
@@ -139,4 +146,27 @@ test("offers keyboard users a skip link", async () => {
   const dashboard = await readSource("src/components/overview-dashboard.tsx");
 
   assert.match(dashboard, /href="#overview"[^>]+>Skip to overview</);
+});
+
+test("documents and supplies the server-side Nexus Core environment", async () => {
+  const [example, compose] = await Promise.all([
+    readSource(".env.example"),
+    readSource("docker-compose.yaml")
+  ]);
+
+  for (const name of [
+    "NEXUS_CORE_URL",
+    "CORE_API_KEY",
+    "VEYRA_TELEGRAM_USER_ID",
+    "VEYRA_USER_ID"
+  ]) {
+    assert.match(example, new RegExp(`^${name}=`, "m"));
+    assert.match(compose, new RegExp(name));
+  }
+
+  assert.match(example, /^VEYRA_TELEGRAM_USER_ID=976684739$/m);
+  assert.match(example, /^VEYRA_USER_ID=1$/m);
+  assert.match(compose, /http:\/\/core-api:3000/);
+  assert.match(compose, /veyra-network/);
+  assert.doesNotMatch(example, /NEXT_PUBLIC_/);
 });

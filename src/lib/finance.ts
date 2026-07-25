@@ -1,37 +1,59 @@
 export type Period = "current" | "previous";
+export type BudgetStatus = "on-track" | "warning" | "over";
 
-export type Transaction = {
-  id: string;
-  date: string;
-  merchant: string;
-  category: string;
-  amount: number;
-  type: "income" | "expense";
-};
-
-export type Budget = { category: string; limit: number };
-export type OverviewInput = { transactions: Transaction[]; budgets: Budget[]; period: Period; now: string; knownCategories?: string[] };
-
-export type Totals = {
-  totalIncome: number;
-  totalSpent: number;
+export interface Totals {
+  income: number;
+  spent: number;
   netCashflow: number;
   dailyAverage: number;
-};
+}
 
-export type BudgetStatus = "on-track" | "warning" | "over";
-export type BudgetSummary = Budget & { spent: number; percent: number; status: BudgetStatus };
+export interface BudgetSummary {
+  category: string;
+  limit: number;
+  spent: number;
+  percent: number;
+  status: BudgetStatus;
+}
 
-export type OverviewSummary = Totals & {
+export interface PeriodOverview {
+  period: {
+    label: "current_cycle" | "previous_cycle";
+    start: string;
+    end: string;
+  };
   hasTransactions: boolean;
+  totals: Totals;
   comparison: Totals;
-  dailySpend: { date: string; amount: number }[];
-  categories: { category: string; amount: number; percent: number }[];
+  dailySpend: Array<{ date: string; amount: number }>;
+  categories: Array<{
+    category: string;
+    amount: number;
+    percent: number;
+    transactionCount: number;
+  }>;
   budgets: BudgetSummary[];
-  recentTransactions: Transaction[];
+  recentTransactions: Array<{
+    id: string;
+    date: string;
+    merchant: string | null;
+    category: string | null;
+    amount: number;
+    type: "income" | "expense";
+  }>;
   alert: BudgetSummary | null;
-  insight: string;
-};
+}
+
+export type OverviewSummary = PeriodOverview;
+
+export interface OverviewResponse {
+  user: {
+    id: string;
+    telegramUserId: string;
+  };
+  current: PeriodOverview;
+  previous: PeriodOverview;
+}
 
 const formatter = new Intl.NumberFormat("en-ID", {
   style: "currency",
@@ -42,109 +64,4 @@ const formatter = new Intl.NumberFormat("en-ID", {
 
 export function formatIdr(value: number) {
   return formatter.format(value).replace(/\u00a0/g, " ");
-}
-
-function isDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
-}
-
-function monthKey(date: string, offset = 0) {
-  const [year, month] = date.slice(0, 7).split("-").map(Number);
-  const shifted = new Date(Date.UTC(year, month - 1 + offset, 1));
-  return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, "0")}`;
-}
-
-function daysInMonth(key: string) {
-  const [year, month] = key.split("-").map(Number);
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
-}
-
-export function validateOverviewInput(input: OverviewInput) {
-  if (!isDate(input.now)) throw new Error("Invalid now date");
-  const ids = new Set<string>();
-
-  for (const transaction of input.transactions) {
-    if (!isDate(transaction.date)) throw new Error("Invalid transaction date");
-    if (ids.has(transaction.id)) throw new Error("Duplicate transaction id");
-    if (!Number.isSafeInteger(transaction.amount) || transaction.amount < 0) {
-      throw new Error("Transaction amounts must be whole non-negative rupiah");
-    }
-    ids.add(transaction.id);
-  }
-
-  for (const budget of input.budgets) {
-    if (!Number.isSafeInteger(budget.limit) || budget.limit <= 0) {
-      throw new Error("Budget limits must be positive whole rupiah");
-    }
-  }
-}
-
-function totals(transactions: Transaction[], days: number): Totals {
-  const totalIncome = transactions.filter((transaction) => transaction.type === "income").reduce((sum, transaction) => sum + transaction.amount, 0);
-  const totalSpent = transactions.filter((transaction) => transaction.type === "expense").reduce((sum, transaction) => sum + transaction.amount, 0);
-  return { totalIncome, totalSpent, netCashflow: totalIncome - totalSpent, dailyAverage: Math.round(totalSpent / days) };
-}
-
-export function summarizeOverview(input: OverviewInput): OverviewSummary {
-  validateOverviewInput(input);
-  const selectedKey = monthKey(input.now, input.period === "previous" ? -1 : 0);
-  const comparisonKey = monthKey(selectedKey + "-01", -1);
-  const elapsedDays = Number(input.now.slice(-2));
-  const selectedDays = input.period === "current" ? elapsedDays : daysInMonth(selectedKey);
-  const comparisonDays = input.period === "current" ? Math.min(elapsedDays, daysInMonth(comparisonKey)) : daysInMonth(comparisonKey);
-  const inPeriod = (transaction: Transaction, key: string, maxDay: number) => transaction.date.startsWith(key) && Number(transaction.date.slice(-2)) <= maxDay;
-  const selected = input.transactions.filter((transaction) => inPeriod(transaction, selectedKey, selectedDays));
-  const compared = input.transactions.filter((transaction) => inPeriod(transaction, comparisonKey, comparisonDays));
-  const knownCategories = new Set(input.knownCategories ?? input.budgets.map((budget) => budget.category));
-  const expenses = selected.filter((transaction) => transaction.type === "expense");
-  const amountsByCategory = new Map<string, number>();
-  const addCategory = (category: string, amount: number) => amountsByCategory.set(category, (amountsByCategory.get(category) ?? 0) + amount);
-
-  for (const transaction of expenses) addCategory(knownCategories.has(transaction.category) ? transaction.category : "Others", transaction.amount);
-
-  const rankedCategories = [...amountsByCategory]
-    .filter(([category]) => category !== "Others")
-    .sort(([, left], [, right]) => right - left);
-  const topCategories = rankedCategories.slice(0, 5);
-  const otherAmount = (amountsByCategory.get("Others") ?? 0) + rankedCategories.slice(5).reduce((sum, [, amount]) => sum + amount, 0);
-  if (otherAmount) topCategories.push(["Others", otherAmount]);
-  const totalSpent = expenses.reduce((sum, transaction) => sum + transaction.amount, 0);
-  const categories = topCategories.map(([category, amount]) => ({ category, amount, percent: totalSpent ? Math.round((amount / totalSpent) * 100) : 0 }));
-
-  const allBudgets = input.budgets.map((budget) => {
-    const spent = amountsByCategory.get(budget.category) ?? 0;
-    const ratio = spent / budget.limit;
-    const status: BudgetStatus = ratio > 1 ? "over" : ratio >= 0.8 ? "warning" : "on-track";
-    return { ...budget, spent, percent: Math.round(ratio * 100), status };
-  });
-  const rankBudgets = (left: BudgetSummary, right: BudgetSummary) => right.spent - left.spent || right.spent / right.limit - left.spent / left.limit;
-  const budgets = [...allBudgets].sort(rankBudgets).slice(0, 4);
-  const alert = [...allBudgets]
-    .filter((budget) => budget.status !== "on-track")
-    .sort((left, right) => Number(right.status === "over") - Number(left.status === "over") || right.spent / right.limit - left.spent / left.limit)[0] ?? null;
-  const dailySpend = [...expenses.reduce((days, transaction) => {
-    days.set(transaction.date, (days.get(transaction.date) ?? 0) + transaction.amount);
-    return days;
-  }, new Map<string, number>())].sort(([left], [right]) => left.localeCompare(right)).map(([date, amount]) => ({ date, amount }));
-  const recentTransactions = [...selected].sort((left, right) => right.date.localeCompare(left.date) || right.id.localeCompare(left.id)).slice(0, 5);
-  const summary = totals(selected, selectedDays);
-  const comparison = totals(compared, comparisonDays);
-  const highestCategory = [...categories].sort((left, right) => right.amount - left.amount)[0];
-
-  return {
-    hasTransactions: selected.length > 0,
-    ...summary,
-    comparison,
-    dailySpend,
-    categories,
-    budgets,
-    recentTransactions,
-    alert,
-    insight: highestCategory
-      ? `${highestCategory.category} ${input.period === "current" ? "is" : "was"} your largest expense at ${highestCategory.percent}% of spending.`
-      : "There is not enough activity to form an insight."
-  };
 }

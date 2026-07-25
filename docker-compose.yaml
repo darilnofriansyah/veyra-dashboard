@@ -4,6 +4,11 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:3001:3000"
+    environment:
+      - NEXUS_CORE_URL=${NEXUS_CORE_URL:-http://core-api:3000}
+      - CORE_API_KEY=${CORE_API_KEY:-}
+      - VEYRA_TELEGRAM_USER_ID=${VEYRA_TELEGRAM_USER_ID:-976684739}
+      - VEYRA_USER_ID=${VEYRA_USER_ID:-1}
     networks:
       - veyra-network
 
