@@ -1,7 +1,7 @@
 # Veyra Nexus Core Integration Design
 
 **Date:** 2026-07-25
-**Status:** Proposed
+**Status:** Approved for implementation planning
 **Surface:** Authenticated Overview dashboard
 
 ## 1. Purpose
@@ -220,4 +220,3 @@ This would expose the Core API key and create unnecessary CORS and client-loadin
 ### Next.js proxy route
 
 The dashboard has no browser consumer that needs a proxy. The Server Component can call Core API directly.
-
