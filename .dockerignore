@@ -1,6 +1,7 @@
 .git
 .next
 .superpowers
+.worktrees
 node_modules
 screenshots
 tmp
