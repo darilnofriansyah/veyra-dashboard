@@ -1,0 +1,75 @@
+name: CI and deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    steps:
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" 'bash -se' <<'DEPLOY'
+          set -euo pipefail
+          repo=/home/unmeii/apps/veyra-production
+
+          if [ ! -d "$repo/.git" ]; then
+            git clone --branch main --single-branch https://github.com/darilnofriansyah/veyra-dashboard.git "$repo"
+          fi
+
+          if [ -n "$(git -C "$repo" status --porcelain)" ]; then
+            echo "Production checkout is not clean: $repo" >&2
+            exit 1
+          fi
+
+          git -C "$repo" switch main
+          git -C "$repo" pull --ff-only origin main
+          docker compose --project-directory "$repo" --project-name veyra up -d --build
+
+          for attempt in {1..12}; do
+            if curl --fail --silent --show-error --output /dev/null http://127.0.0.1:3001; then
+              exit 0
+            fi
+            sleep 5
+          done
+
+          docker compose --project-directory "$repo" --project-name veyra ps
+          exit 1
+          DEPLOY
