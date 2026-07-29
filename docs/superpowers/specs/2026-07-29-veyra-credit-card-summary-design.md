@@ -1,7 +1,7 @@
 # Veyra Credit Card Summary Design
 
-**Date:** 2026-07-29  
-**Status:** Approved for implementation planning  
+**Date:** 2026-07-29
+**Status:** Approved for implementation planning
 **Surface:** Authenticated Overview dashboard
 
 ## Purpose
