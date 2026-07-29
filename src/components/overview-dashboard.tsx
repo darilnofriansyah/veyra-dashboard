@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Gauge, House, Receipt, Sparkle, TrendUp, Wallet, Warning } from "@phosphor-icons/react";
+import { CheckCircle, CreditCard, Gauge, House, Receipt, Sparkle, TrendUp, Wallet, Warning } from "@phosphor-icons/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -8,7 +8,7 @@ import { logout } from "@/app/actions";
 import { CategoryBreakdown } from "@/components/category-breakdown";
 import { SpendingTrend } from "@/components/spending-trend";
 import { comparison } from "@/lib/dashboard-display";
-import { formatIdr, type BudgetStatus, type Period } from "@/lib/finance";
+import { creditUsagePercent, formatIdr, type BudgetStatus, type Period } from "@/lib/finance";
 import type { OverviewLoaderResult } from "@/lib/overview-loader";
 
 const panel = "min-w-0 rounded-veyra border border-veyra-line bg-white p-3";
@@ -57,6 +57,9 @@ export function OverviewDashboard({
     .join("")
     .toUpperCase();
   const summary = data.data?.[period] ?? null;
+  const creditUsage = summary
+    ? creditUsagePercent(summary.creditCard.used, summary.creditCard.limit)
+    : 0;
   const cycleLabel = summary
     ? formatCycle(summary.period.start, summary.period.end)
     : "Cycle unavailable";
@@ -160,6 +163,37 @@ export function OverviewDashboard({
                   </article>
                 );
               })}
+            </section>
+
+            <section
+              aria-label="Credit card"
+              className={`${panel} mt-2.5 border-l-[3px] border-l-veyra-cyan`}
+            >
+              <h2 className="mb-3 flex items-center gap-2 text-sm font-bold">
+                <CreditCard size={16} weight="duotone" aria-hidden="true" className="text-veyra-cyan" />
+                Credit Card
+              </h2>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <span className={label}>Amount to Pay</span>
+                  <strong className={value}>{formatIdr(summary.creditCard.statementBalance)}</strong>
+                </div>
+                <div>
+                  <span className={label}>Credit Used</span>
+                  <strong className={value}>{formatIdr(summary.creditCard.used)}</strong>
+                </div>
+              </div>
+              <progress
+                max="100"
+                value={Math.min(creditUsage, 100)}
+                aria-label={`Credit card used: ${formatIdr(summary.creditCard.used)} of ${formatIdr(summary.creditCard.limit)}, ${creditUsage}%`}
+                className="budget-progress mt-3 h-1.5 w-full"
+              >
+                {creditUsage}%
+              </progress>
+              <span className="mt-1.5 block text-xs text-slate-500">
+                {creditUsage}% of {formatIdr(summary.creditCard.limit)} limit
+              </span>
             </section>
 
             <section className="mt-2.5 grid gap-2.5 xl:grid-cols-[1.6fr_1fr]">

@@ -78,6 +78,22 @@ test("composes the approved dashboard hierarchy", async () => {
   assert.match(dashboard, /motion-reduce:transition-none/);
 });
 
+test("renders one period-owned accessible credit card summary", async () => {
+  const dashboard = await readSource("src/components/overview-dashboard.tsx");
+
+  assert.match(dashboard, /aria-label="Credit card"/);
+  assert.match(dashboard, /Amount to Pay/);
+  assert.match(dashboard, /Credit Used/);
+  assert.match(dashboard, /summary\.creditCard\.statementBalance/);
+  assert.match(dashboard, /summary\.creditCard\.used/);
+  assert.match(dashboard, /summary\.creditCard\.limit/);
+  assert.match(dashboard, /aria-label=\{`Credit card used:/);
+  assert.ok(
+    dashboard.indexOf('aria-label="Financial health"')
+      < dashboard.indexOf('aria-label="Credit card"')
+  );
+});
+
 test("uses raw budget status for rows, accessibility, and alert semantics", async () => {
   const [dashboard, finance] = await Promise.all([
     readSource("src/components/overview-dashboard.tsx"),

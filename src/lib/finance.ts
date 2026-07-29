@@ -62,6 +62,10 @@ export interface OverviewResponse {
   previous: PeriodOverview;
 }
 
+export function creditUsagePercent(used: number, limit: number) {
+  return limit === 0 ? 0 : Math.round((used / limit) * 100);
+}
+
 const formatter = new Intl.NumberFormat("en-ID", {
   style: "currency",
   currency: "IDR",
