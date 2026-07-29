@@ -1,6 +1,7 @@
 import type {
   BudgetStatus,
   BudgetSummary,
+  CreditCardSummary,
   OverviewResponse,
   PeriodOverview,
   Totals
@@ -119,6 +120,18 @@ function parseBudget(value: unknown, name: string): BudgetSummary {
   };
 }
 
+function parseCreditCard(value: unknown, name: string): CreditCardSummary {
+  const item = object(value, name);
+  return {
+    limit: rupiah(item.limit, `${name}.limit`),
+    used: rupiah(item.used, `${name}.used`),
+    statementBalance: rupiah(
+      item.statementBalance,
+      `${name}.statementBalance`
+    )
+  };
+}
+
 function parsePeriodOverview(value: unknown, name: string): PeriodOverview {
   const item = object(value, name);
   const periodValue = object(item.period, `${name}.period`);
@@ -139,6 +152,7 @@ function parsePeriodOverview(value: unknown, name: string): PeriodOverview {
   return {
     period: { label, start, end },
     hasTransactions: item.hasTransactions,
+    creditCard: parseCreditCard(item.creditCard, `${name}.creditCard`),
     totals: parseTotals(item.totals, `${name}.totals`),
     comparison: parseTotals(item.comparison, `${name}.comparison`),
     dailySpend: list(item.dailySpend, `${name}.dailySpend`, (value, index) => {

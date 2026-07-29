@@ -16,6 +16,12 @@ export interface BudgetSummary {
   status: BudgetStatus;
 }
 
+export interface CreditCardSummary {
+  limit: number;
+  used: number;
+  statementBalance: number;
+}
+
 export interface PeriodOverview {
   period: {
     label: "current_cycle" | "previous_cycle";
@@ -23,6 +29,7 @@ export interface PeriodOverview {
     end: string;
   };
   hasTransactions: boolean;
+  creditCard: CreditCardSummary;
   totals: Totals;
   comparison: Totals;
   dailySpend: Array<{ date: string; amount: number }>;

@@ -2,9 +2,19 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { loadOverview } from "../src/lib/overview-loader.ts";
 
-const period = (label: "current_cycle" | "previous_cycle", start: string, end: string) => ({
+const period = (
+  label: "current_cycle" | "previous_cycle",
+  start: string,
+  end: string,
+  creditCard = {
+    limit: 10_000_000,
+    used: 4_700_000,
+    statementBalance: 3_250_000
+  }
+) => ({
   period: { label, start, end },
   hasTransactions: true,
+  creditCard,
   totals: {
     income: 10_000_000,
     spent: 4_000_000,
@@ -45,7 +55,12 @@ const period = (label: "current_cycle" | "previous_cycle", start: string, end: s
 const validResponse = {
   user: { id: "1", telegramUserId: "976684739" },
   current: period("current_cycle", "2026-07-15", "2026-08-15"),
-  previous: period("previous_cycle", "2026-06-15", "2026-07-15")
+  previous: period(
+    "previous_cycle",
+    "2026-06-15",
+    "2026-07-15",
+    { limit: 0, used: 0, statementBalance: 0 }
+  )
 };
 
 const environment = process.env as Record<string, string | undefined>;
@@ -179,6 +194,16 @@ test("rejects malformed overview responses", async (t) => {
         current: { budgets: unknown };
       };
       body.current.budgets = {};
+      return Response.json(body);
+    }],
+    ["missing credit card", () => {
+      const body = structuredClone(validResponse) as Record<string, unknown>;
+      delete (body.current as Record<string, unknown>).creditCard;
+      return Response.json(body);
+    }],
+    ["negative statement balance", () => {
+      const body = structuredClone(validResponse);
+      body.current.creditCard.statementBalance = -1;
       return Response.json(body);
     }],
     ["malformed JSON", () => new Response("{", {
