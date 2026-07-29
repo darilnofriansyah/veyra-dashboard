@@ -88,6 +88,11 @@ test("renders one period-owned accessible credit card summary", async () => {
   assert.match(dashboard, /summary\.creditCard\.used/);
   assert.match(dashboard, /summary\.creditCard\.limit/);
   assert.match(dashboard, /aria-label=\{`Credit card used:/);
+  assert.match(
+    dashboard,
+    /className="mt-1 block text-2xl[^"]*">\{formatIdr\(summary\.creditCard\.statementBalance\)\}<\/strong>/
+  );
+  assert.equal([...dashboard.matchAll(/aria-label="Credit card"/g)].length, 1);
   assert.ok(
     dashboard.indexOf('aria-label="Financial health"')
       < dashboard.indexOf('aria-label="Credit card"')

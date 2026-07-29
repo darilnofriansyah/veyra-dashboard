@@ -176,7 +176,7 @@ export function OverviewDashboard({
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
                   <span className={label}>Amount to Pay</span>
-                  <strong className={value}>{formatIdr(summary.creditCard.statementBalance)}</strong>
+                  <strong className="mt-1 block text-2xl font-bold tracking-[-0.04em] text-veyra-ink">{formatIdr(summary.creditCard.statementBalance)}</strong>
                 </div>
                 <div>
                   <span className={label}>Credit Used</span>
