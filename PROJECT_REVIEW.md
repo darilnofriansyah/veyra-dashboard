@@ -6,7 +6,7 @@
 - Branch: `main`
 - Commit: `09d5ef8` (`docs: add weekly repository review prompt`)
 - Working tree: clean before this review file
-- Tests run: none during this review
+- Checks run: `npm test` passed 8/8; `npm run build` passed
 
 ## Completed Work
 
@@ -24,7 +24,7 @@
 
 - Add a project README covering environment variables, local startup, test commands, Core API dependency, and deployment flow.
 - Keep generated screenshots, temporary files, build metadata, agent sessions, and local worktrees outside tracked source.
-- Run the existing `node --test` suite and production build after cross-repository contract changes; this review did not execute them.
+- Keep the existing `node --test` suite and production build as required checks after cross-repository contract changes.
 
 ## Summary
 
