@@ -1,5 +1,14 @@
 # Veyra Nexus Core Integration Implementation Plan
 
+> **Status:** Historical — repository implementation complete. Contract fixture
+> integration and live Core verification are tracked in
+> [B-001](../../../BACKLOG.md#b-001--integrate-the-core-api-contract-fixture)
+> and [B-003](../../../BACKLOG.md#b-003--verify-live-integrations-deployment-and-weekly-review-scheduling)
+> of the authoritative backlog.
+>
+> All checkboxes below are historical execution notes, not current open work.
+> Only [`BACKLOG.md`](../../../BACKLOG.md) represents the current backlog.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace Veyra dashboard fixtures with one authenticated, server-side Nexus Core overview request while preserving the existing accessible read-only dashboard.

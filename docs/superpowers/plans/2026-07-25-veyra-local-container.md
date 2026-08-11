@@ -1,5 +1,12 @@
 # Veyra Local Container Implementation Plan
 
+> **Status:** Historical — repository implementation complete. Current
+> production runtime evidence, where applicable, is tracked in
+> [B-003 of the authoritative backlog](../../../BACKLOG.md#b-003--verify-live-integrations-deployment-and-weekly-review-scheduling).
+>
+> All checkboxes below are historical execution notes, not current open work.
+> Only [`BACKLOG.md`](../../../BACKLOG.md) represents the current backlog.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Run the existing Next.js application in Docker at `http://127.0.0.1:3001`.

@@ -1,5 +1,13 @@
 # Veyra Credit Card Summary Implementation Plan
 
+> **Status:** Historical — repository implementation complete. The provider
+> contract fixture and acceptance tests completed in the Task 2 worktree await
+> integration under
+> [B-001 of the authoritative backlog](../../../BACKLOG.md#b-001--integrate-the-core-api-contract-fixture).
+>
+> All checkboxes below are historical execution notes, not current open work.
+> Only [`BACKLOG.md`](../../../BACKLOG.md) represents the current backlog.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Show one combined credit-card usage and full statement balance for each dashboard cycle, plus a ready-to-run Core API Codex prompt.
