@@ -1,6 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { loadOverview } from "../src/lib/overview-loader.ts";
+
+const CORE_OVERVIEW_V1_FIXTURE = new URL(
+  "./fixtures/core-api-dashboard-overview.v1.json",
+  import.meta.url
+);
+
+async function coreOverviewV1Fixture(): Promise<unknown> {
+  return JSON.parse(await readFile(CORE_OVERVIEW_V1_FIXTURE, "utf8")) as unknown;
+}
 
 const period = (
   label: "current_cycle" | "previous_cycle",
@@ -81,6 +91,43 @@ function withEnvironment(values: Record<string, string | undefined>, run: () => 
     }
   });
 }
+
+test("accepts the canonical Core API v1 credit-card contract for both cycles", async () => {
+  const loaded = await loadOverview(
+    "2026-07-25",
+    "100000001",
+    async () => Response.json(await coreOverviewV1Fixture())
+  );
+
+  assert.equal(loaded.error, false);
+  assert.deepEqual(loaded.data?.current.creditCard, {
+    limit: 12_000_000,
+    used: 3_250_000,
+    statementBalance: 0
+  });
+  assert.deepEqual(loaded.data?.previous.creditCard, {
+    limit: 10_000_000,
+    used: 7_500_000,
+    statementBalance: 7_500_000
+  });
+  assert.equal(loaded.data?.current.alert, null);
+  assert.equal(loaded.data?.previous.alert, null);
+});
+
+test("rejects canonical contract drift in the previous credit-card summary", async () => {
+  const drifted = structuredClone(await coreOverviewV1Fixture()) as {
+    previous: { creditCard: Record<string, unknown> };
+  };
+  delete drifted.previous.creditCard.statementBalance;
+
+  const loaded = await loadOverview(
+    "2026-07-25",
+    "100000001",
+    async () => Response.json(drifted)
+  );
+
+  assert.deepEqual(loaded, { data: null, error: true });
+});
 
 test("posts one uncached authenticated request with configured identity", async () => {
   await withEnvironment({
