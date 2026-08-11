@@ -1,0 +1,122 @@
+{
+  "user": {
+    "id": "fixture-user-001",
+    "telegramUserId": "100000001"
+  },
+  "current": {
+    "period": {
+      "label": "current_cycle",
+      "start": "2026-07-15",
+      "end": "2026-08-15"
+    },
+    "hasTransactions": true,
+    "totals": {
+      "income": 10000000,
+      "spent": 3250000,
+      "netCashflow": 6750000,
+      "dailyAverage": 295455
+    },
+    "comparison": {
+      "income": 9000000,
+      "spent": 3000000,
+      "netCashflow": 6000000,
+      "dailyAverage": 272727
+    },
+    "dailySpend": [
+      {
+        "date": "2026-07-18",
+        "amount": 125000
+      }
+    ],
+    "categories": [
+      {
+        "category": "Groceries",
+        "amount": 125000,
+        "percent": 4,
+        "transactionCount": 1
+      }
+    ],
+    "budgets": [
+      {
+        "category": "Groceries",
+        "limit": 1500000,
+        "spent": 125000,
+        "percent": 8.33,
+        "status": "on-track"
+      }
+    ],
+    "recentTransactions": [
+      {
+        "id": "fixture-transaction-current-001",
+        "date": "2026-07-18",
+        "merchant": "Sample Grocer",
+        "category": "Groceries",
+        "amount": 125000,
+        "type": "expense"
+      }
+    ],
+    "creditCard": {
+      "limit": 12000000,
+      "used": 3250000,
+      "statementBalance": 0
+    }
+  },
+  "previous": {
+    "period": {
+      "label": "previous_cycle",
+      "start": "2026-06-15",
+      "end": "2026-07-15"
+    },
+    "hasTransactions": true,
+    "totals": {
+      "income": 9000000,
+      "spent": 7500000,
+      "netCashflow": 1500000,
+      "dailyAverage": 250000
+    },
+    "comparison": {
+      "income": 8500000,
+      "spent": 7000000,
+      "netCashflow": 1500000,
+      "dailyAverage": 233333
+    },
+    "dailySpend": [
+      {
+        "date": "2026-06-20",
+        "amount": 250000
+      }
+    ],
+    "categories": [
+      {
+        "category": "Transport",
+        "amount": 250000,
+        "percent": 3,
+        "transactionCount": 1
+      }
+    ],
+    "budgets": [
+      {
+        "category": "Transport",
+        "limit": 2000000,
+        "spent": 250000,
+        "percent": 12.5,
+        "status": "on-track"
+      }
+    ],
+    "recentTransactions": [
+      {
+        "id": "fixture-transaction-previous-001",
+        "date": "2026-06-20",
+        "merchant": "Sample Transit",
+        "category": "Transport",
+        "amount": 250000,
+        "type": "expense"
+      }
+    ],
+    "creditCard": {
+      "limit": 10000000,
+      "used": 7500000,
+      "statementBalance": 7500000
+    }
+  }
+}
