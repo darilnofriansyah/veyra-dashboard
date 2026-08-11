@@ -1,5 +1,12 @@
 # GitHub Actions VPS Deployment Implementation Plan
 
+> **Status:** Historical — the repository workflow is implemented. Live
+> deployment and environment verification remain external work tracked in
+> [B-003 of the authoritative backlog](../../../BACKLOG.md#b-003--verify-live-integrations-deployment-and-weekly-review-scheduling).
+>
+> All checkboxes below are historical execution notes, not current open work.
+> Only [`BACKLOG.md`](../../../BACKLOG.md) represents the current backlog.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Test pull requests and automatically deploy successful pushes to `main` to the existing VPS.

@@ -1,5 +1,11 @@
 # Veyra Demo Login Implementation Plan
 
+> **Status:** Historical — repository implementation complete and subsequently
+> superseded by the Telegram OIDC authentication flow.
+>
+> All checkboxes below are historical execution notes, not current open work.
+> Only [`BACKLOG.md`](../../../BACKLOG.md) represents the current backlog.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add the approved Veyra login at `/`, guard the existing dashboard at `/dashboard` with a local demo cookie, and provide sign out.

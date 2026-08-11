@@ -1,5 +1,13 @@
 # Weekly Repository Review Implementation Plan
 
+> **Status:** Historical — the review prompt and repository review artifacts are
+> implemented. Installation and successful execution of the external weekly cron
+> remain unverified and are tracked in
+> [B-003 of the authoritative backlog](../../../BACKLOG.md#b-003--verify-live-integrations-deployment-and-weekly-review-scheduling).
+>
+> All checkboxes below are historical execution notes, not current open work.
+> Only [`BACKLOG.md`](../../../BACKLOG.md) represents the current backlog.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Create one evidence-based review document per repository and refresh all three every Monday at 09:00 Asia/Jakarta.

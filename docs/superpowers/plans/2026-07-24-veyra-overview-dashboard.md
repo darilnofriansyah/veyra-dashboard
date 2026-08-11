@@ -1,5 +1,12 @@
 # Veyra Overview Dashboard Implementation Plan
 
+> **Status:** Historical — repository implementation complete. Final brand
+> assets and licensed typography remain blocked and are tracked in
+> [B-004 of the authoritative backlog](../../../BACKLOG.md#b-004--replace-provisional-brand-assets-and-font).
+>
+> All checkboxes below are historical execution notes, not current open work.
+> Only [`BACKLOG.md`](../../../BACKLOG.md) represents the current backlog.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build the approved Veyra Overview dashboard in Next.js and Tailwind CSS, matching the supplied landing-page style while keeping the first release read-only and data-first.
