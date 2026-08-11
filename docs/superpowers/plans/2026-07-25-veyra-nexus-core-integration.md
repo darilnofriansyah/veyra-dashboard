@@ -1,10 +1,8 @@
 # Veyra Nexus Core Integration Implementation Plan
 
-> **Status:** Historical — repository implementation complete. Contract fixture
-> integration and live Core verification are tracked in
-> [B-001](../../../BACKLOG.md#b-001--integrate-the-core-api-contract-fixture)
-> and [B-003](../../../BACKLOG.md#b-003--verify-live-integrations-deployment-and-weekly-review-scheduling)
-> of the authoritative backlog.
+> **Status:** Historical — repository implementation and contract fixture
+> coverage are complete. Authorized live Core verification remains tracked in
+> [B-003 of the authoritative backlog](../../../BACKLOG.md#b-003--verify-live-integrations-deployment-and-weekly-review-scheduling).
 >
 > All checkboxes below are historical execution notes, not current open work.
 > Only [`BACKLOG.md`](../../../BACKLOG.md) represents the current backlog.

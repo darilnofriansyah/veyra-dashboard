@@ -1,9 +1,7 @@
 # Veyra Credit Card Summary Implementation Plan
 
-> **Status:** Historical — repository implementation complete. The provider
-> contract fixture and acceptance tests completed in the Task 2 worktree await
-> integration under
-> [B-001 of the authoritative backlog](../../../BACKLOG.md#b-001--integrate-the-core-api-contract-fixture).
+> **Status:** Historical — repository implementation, provider contract fixture,
+> and acceptance tests are complete and integrated.
 >
 > All checkboxes below are historical execution notes, not current open work.
 > Only [`BACKLOG.md`](../../../BACKLOG.md) represents the current backlog.

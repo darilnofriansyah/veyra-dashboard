@@ -7,44 +7,21 @@ records; checked or unchecked boxes there do not represent the current backlog.
 
 ## Current work
 
-### B-001 — Integrate the Core API contract fixture
-
-- **Status:** Pending integration (Task 2 is complete in a separate worktree).
-- **Evidence:** Task 2 added a versioned, de-identified provider payload and
-  fixture-driven `loadOverview` acceptance and drift tests. Its focused tests,
-  full test suite, production build, and diff check passed in that worktree.
-- **Dependencies:** Bring the Task 2 fixture/test artifacts into the
-  integration branch without overwriting unrelated work.
-- **Complete when:** The fixture and acceptance tests are integrated, the full
-  test suite and production build pass on the integrated revision, and the
-  fixture remains de-identified. This item does not claim live-production API
-  compatibility; that evidence belongs to B-003.
-
-### B-002 — Add contributor setup and operations documentation
-
-- **Status:** Planned for Task 4.
-- **Evidence:** The repository has no README, while setup knowledge is spread
-  across source, Compose, the deployment workflow, and historical plans.
-- **Dependencies:** Confirm B-001's integration state and document commands for
-  the revision that Task 4 targets.
-- **Complete when:** A concise root README documents prerequisites, environment
-  variables, local development, tests/build, container use, Core API and
-  Telegram integration boundaries, deployment workflow, and links to this
-  backlog without presenting historical plans as active work.
-
 ### B-003 — Verify live integrations, deployment, and weekly review scheduling
 
-- **Status:** External verification pending; planned for Task 5.
-- **Evidence:** Source and history prove the Core loader, Telegram OIDC routes,
-  deployment workflow, and weekly review prompt exist. The latest project review
-  does not prove live Core compatibility, the deployed revision and environment,
-  production Telegram authentication, or an installed and successful cron run.
-- **Dependencies:** Authorized access to the production host, deployment/CI
-  configuration, Telegram OIDC configuration, live Core API, and scheduler logs.
-- **Complete when:** Evidence identifies the deployed revision; validates the
-  required environment names without exposing secrets; exercises production
-  Telegram sign-in and Core overview loading; confirms the deployment workflow's
-  expected target; and proves the weekly cron entry plus a recent successful run.
+- **Status:** Partially verified on 2026-08-11; controlled end-to-end checks remain.
+- **Evidence:** The
+  [operations verification report](docs/operations-verification-2026-08-11.md)
+  confirms the production checkout, latest successful deployment workflow,
+  running containers, local and public root responses, Core network reachability,
+  expected environment-name presence, and the installed weekly schedule. It does
+  not prove a complete Telegram login, an authorized Core overview request, or a
+  successful weekly-review outcome.
+- **Dependencies:** An authorized Telegram test identity, an approved
+  non-sensitive Core smoke-test identity, and secret-safe scheduler-log review.
+- **Complete when:** A controlled production Telegram sign-in and authorized Core
+  overview request succeed, and a recent weekly-review run is proven successful
+  through secret-safe evidence.
 
 ### B-004 — Replace provisional brand assets and font
 
@@ -65,13 +42,20 @@ status notices are authoritative for interpreting their checklists.
 | Plan | Reconciled status | Current follow-up |
 | --- | --- | --- |
 | [Overview dashboard](docs/superpowers/plans/2026-07-24-veyra-overview-dashboard.md) | Repository implementation complete; historical | B-004 for final brand assets/font |
-| [GitHub Actions VPS deployment](docs/superpowers/plans/2026-07-25-github-actions-vps-deployment.md) | Repository workflow complete; historical | B-003 for external verification |
+| [GitHub Actions VPS deployment](docs/superpowers/plans/2026-07-25-github-actions-vps-deployment.md) | Repository workflow and latest deployment verification complete; historical | None |
 | [Demo login](docs/superpowers/plans/2026-07-25-veyra-demo-login.md) | Repository implementation complete and superseded by Telegram OIDC; historical | None |
-| [Local container](docs/superpowers/plans/2026-07-25-veyra-local-container.md) | Repository implementation complete; historical | B-003 for current production evidence |
-| [Nexus Core integration](docs/superpowers/plans/2026-07-25-veyra-nexus-core-integration.md) | Repository implementation complete; historical | B-001 and B-003 |
+| [Local container](docs/superpowers/plans/2026-07-25-veyra-local-container.md) | Repository implementation and production runtime verification complete; historical | None |
+| [Nexus Core integration](docs/superpowers/plans/2026-07-25-veyra-nexus-core-integration.md) | Repository implementation and contract coverage complete; historical | B-003 for authorized live verification |
 | [Telegram OIDC](docs/superpowers/plans/2026-07-26-veyra-telegram-oidc.md) | Repository implementation complete; historical | B-003 for production verification |
-| [Credit-card summary](docs/superpowers/plans/2026-07-29-veyra-credit-card-summary.md) | Repository implementation complete; historical | B-001 for fixture integration |
-| [Weekly repository review](docs/superpowers/plans/2026-07-31-weekly-repository-review.md) | Repository artifacts complete; historical | B-003 for cron verification |
+| [Credit-card summary](docs/superpowers/plans/2026-07-29-veyra-credit-card-summary.md) | Repository implementation and contract coverage complete; historical | None |
+| [Weekly repository review](docs/superpowers/plans/2026-07-31-weekly-repository-review.md) | Repository artifacts and cron schedule verification complete; historical | B-003 for successful-run evidence |
+
+## Completed this week
+
+| Item | Completed | Evidence |
+| --- | --- | --- |
+| B-001 — Integrate the Core API contract fixture | 2026-08-11 | Versioned de-identified fixture and fixture-driven acceptance/drift tests are integrated; the full suite and production build pass. |
+| B-002 — Add contributor setup and operations documentation | 2026-08-11 | The root README documents prerequisites, configuration, local and container workflows, integration boundaries, deployment, and operations. |
 
 ## Maintenance rule
 

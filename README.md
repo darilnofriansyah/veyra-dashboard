@@ -6,11 +6,8 @@ categories, budgets, recent transactions, alerts, and a combined credit-card
 summary. Veyra does not create or edit financial records; it renders data from
 the Core API.
 
-Current work is tracked in [`BACKLOG.md`](BACKLOG.md) after the separate Task 3
-backlog change is integrated. This README branch intentionally does not
-duplicate that backlog, so the link is expected to be absent until integration.
-Historical implementation plans are supporting records, not an active task
-list.
+Current work is tracked in [`BACKLOG.md`](BACKLOG.md). Historical implementation
+plans are supporting records, not an active task list.
 
 ## Prerequisites
 
