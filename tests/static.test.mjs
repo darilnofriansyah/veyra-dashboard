@@ -214,6 +214,59 @@ test("contains long account details inside the desktop sidebar", async () => {
   assert.match(shell, /<span className="[^"]*min-w-0[^"]*break-words[^"]*">\{accountContext\}<\/span>/);
 });
 
+test("renders the protected URL-filtered finalized transaction list", async () => {
+  const [page, view] = await Promise.all([
+    readSource("src/app/transactions/page.tsx"),
+    readSource("src/components/transactions-page.tsx")
+  ]);
+
+  assert.match(page, /searchParams:\s*Promise</);
+  assert.match(page, /await connection\(\)/);
+  assert.match(page, /verifySessionToken/);
+  assert.match(page, /if \(!session\) redirect\("\/"\)/);
+  assert.match(page, /function jakartaToday\(\)/);
+  assert.match(page, /timeZone:\s*"Asia\/Jakarta"/);
+  assert.match(page, /parseTransactionFilters\(await searchParams\)/);
+  assert.match(page, /await loadTransactions\(\{/);
+  assert.match(page, /telegramUserId:\s*session\.telegramUserId/);
+  assert.match(page, /asOfDate:\s*jakartaToday\(\)/);
+  assert.match(page, /title:\s*"Transactions"/);
+  assert.match(page, /description:\s*"Review and correct your Veyra transactions"/);
+
+  assert.match(view, /^"use client"/);
+  assert.match(view, /activePage="transactions"/);
+  assert.match(view, /accountContext="Finalized records"/);
+  for (const label of ["Cycle", "Category", "Type", "Merchant search"]) {
+    assert.match(view, new RegExp(`>${label}<`));
+  }
+  for (const name of ["cycle", "category", "type", "search"]) {
+    assert.match(view, new RegExp(`name="${name}"`));
+  }
+  assert.match(view, /event\.preventDefault\(\)/);
+  assert.match(view, /new FormData\(event\.currentTarget\)/);
+  assert.match(view, /router\.push\(transactionHref\(filters, changes\)\)/);
+  assert.match(view, /transactionHref\(filters, \{ \[filter\.key\]: null \}\)/);
+  assert.match(view, />Clear filters<\/Link>/);
+
+  assert.match(view, /<caption[^>]*>Finalized transaction records<\/caption>/);
+  for (const heading of ["Date", "Merchant", "Category", "Source", "Type", "Amount"]) {
+    assert.match(view, new RegExp(`<th scope="col"[^>]*>${heading}</th>`));
+  }
+  assert.match(view, /<time dateTime=\{transaction\.transactionDate\}>/);
+  assert.match(view, /transaction\.type === "income" \? "\+" : ""/);
+  assert.match(view, /formatIdr\(signedAmount\)/);
+  assert.match(view, /transactions?"\} on this page/);
+  assert.match(view, /Transactions recorded through Telegram or email will appear here\./);
+  assert.match(view, /No finalized transactions match these filters\./);
+  assert.match(view, /router\.refresh\(\)/);
+  assert.match(view, />Retry<\/button>/);
+  assert.match(view, /direction: "previous"/);
+  assert.match(view, /direction: "next"/);
+  assert.match(view, />Previous<\/Link>/);
+  assert.match(view, />Next<\/Link>/);
+  assert.doesNotMatch(view, /Create transaction|New transaction|>Action<|>Edit</);
+});
+
 test("offers only real Telegram login and safe provider errors", async () => {
   const [loginPage, actions] = await Promise.all([
     readSource("src/app/page.tsx"),
