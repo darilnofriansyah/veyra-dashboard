@@ -182,8 +182,9 @@ direction=next|previous
 ```
 
 Unknown values are discarded rather than forwarded. Empty values are omitted.
-Search is trimmed and length-limited. Cycle parameters resolve to explicit
-Jakarta start and exclusive-end dates on the Veyra server before Core is called.
+Search is trimmed and length-limited. Veyra sends a validated cycle value plus
+the Jakarta calendar date; Core resolves financial-cycle boundaries from the
+active user's `cycle_start_day`.
 
 Example future drilldown:
 
@@ -196,8 +197,8 @@ Example future drilldown:
 ### Route and shell
 
 `src/app/transactions/page.tsx` verifies the session, validates URL state,
-resolves cycle boundaries, calls the transaction loader, and renders the page.
-It never accepts a Telegram identity from browser input.
+calculates the Jakarta calendar date, calls the transaction loader, and renders
+the page. It never accepts a Telegram identity from browser input.
 
 The dashboard and transactions pages use a shared authenticated shell component.
 Page-specific content and active-route metadata are passed into the shell.
@@ -208,6 +209,7 @@ The loader calls Core from the server with:
 
 - The Telegram ID from the verified Veyra session
 - Validated filters and cursor
+- The Jakarta calendar date for cycle resolution
 - Fixed `Asia/Jakarta` timezone
 - Optional server-only Core API key
 - `cache: "no-store"`
@@ -251,11 +253,11 @@ Request:
   "cursor": "opaque-value",
   "direction": "next",
   "limit": 50,
+  "cycle": "current",
+  "asOfDate": "2026-08-13",
   "type": "expense",
   "category": "Dining",
   "merchantQuery": "tuku",
-  "startDate": "2026-08-01",
-  "endDate": "2026-09-01",
   "timezone": "Asia/Jakarta"
 }
 ```
@@ -287,8 +289,11 @@ Response:
 ```
 
 The repository resolves the active Telegram user first, then scopes every query
-by internal `user_id`. The keyset uses `(transaction_date, id)`. Cursor content
-is encoded and validated by Core; Veyra treats it as opaque.
+by internal `user_id`. For `current` or `previous`, Core derives start and
+exclusive-end timestamps from `asOfDate`, timezone, and that user's
+`cycle_start_day`, matching Overview semantics. The keyset uses
+`(transaction_date, id)`. Cursor content is encoded and validated by Core;
+Veyra treats it as opaque.
 
 Category options come from the finalized user-scoped transaction set under the
 current cycle/type/search filters, excluding the category filter itself. No
