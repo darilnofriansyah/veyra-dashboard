@@ -306,6 +306,12 @@ test("edits a selected transaction in an accessible native side panel", async ()
   assert.match(dialog, /aria-describedby=\{/);
   assert.match(dialog, /aria-invalid=\{/);
   assert.match(dialog, /disabled=\{pending\}/);
+  assert.match(dialog, /disabled=\{pending \|\| !dirty\}/);
+  assert.match(dialog, /aria-busy=\{pending\}/);
+  assert.match(dialog, /if \(pending\) return;/);
+  assert.match(dialog, /if \(!pending\) event\.currentTarget\.close\(\);/);
+  assert.match(dialog, /disabled=\{pending\}[^>]*aria-label="Close transaction editor"/s);
+  assert.match(dialog, /disabled=\{pending\}[^>]*>Cancel<\/button>/s);
   assert.match(dialog, /state\.status === "validation"/);
   assert.match(dialog, /state\.status === "conflict"/);
   assert.match(dialog, />Reload transaction<\/button>/);
@@ -313,8 +319,11 @@ test("edits a selected transaction in an accessible native side panel", async ()
   assert.match(dialog, />Dismiss<\/button>/);
   assert.match(dialog, /state\.status === "unavailable"/);
   assert.match(dialog, /router\.refresh\(\)/);
+  assert.match(dialog, /onSaved\(\)/);
   assert.match(dialog, /Credit used will adjust by/);
   assert.match(dialog, /transaction\.creditCard/);
+  assert.match(dialog, /const parsedAmount = editableAmount\(amount\)/);
+  assert.match(dialog, /parsedAmount === null \? null : parsedAmount - transaction\.amount/);
   assert.match(dialog, /Number\.isSafeInteger\(amountDelta\)/);
   assert.match(dialog, /value=\{merchant\}/);
   assert.match(dialog, /onChange=\{\(event\) => setMerchant\(event\.target\.value\)\}/);
@@ -331,6 +340,9 @@ test("edits a selected transaction in an accessible native side panel", async ()
   assert.match(view, /<TransactionEditDialog/);
   assert.match(view, /aria-label=\{`Edit transaction/);
   assert.match(view, /returnFocusRef\.current\?\.focus\(\)/);
+  assert.match(view, /useState\(""\)/);
+  assert.match(view, /role="status" aria-live="polite"/);
+  assert.match(view, /setSaveAnnouncement\("Transaction saved\."\)/);
   assert.match(view, /shadow-\[inset_4px_0_0_var\(--color-veyra-cyan\)\]/);
 
   assert.match(css, /\.transaction-edit-dialog::backdrop/);

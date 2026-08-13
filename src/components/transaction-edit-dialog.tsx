@@ -4,11 +4,13 @@ import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { editTransaction } from "@/app/transactions/actions";
 import { formatIdr } from "@/lib/finance";
+import { editableAmount, transactionEditIsDirty } from "@/lib/transaction-edit-form";
 import type { Transaction, TransactionEditState } from "@/lib/transaction-contract";
 
 interface TransactionEditDialogProps {
   transaction: Transaction;
   onClose: () => void;
+  onSaved: () => void;
 }
 
 const initialEditState: TransactionEditState = { status: "idle" };
@@ -20,7 +22,11 @@ const transactionDate = new Intl.DateTimeFormat("en", {
   timeZone: "Asia/Jakarta"
 });
 
-export function TransactionEditDialog({ transaction, onClose }: TransactionEditDialogProps) {
+export function TransactionEditDialog({
+  transaction,
+  onClose,
+  onSaved
+}: TransactionEditDialogProps) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
@@ -36,10 +42,13 @@ export function TransactionEditDialog({ transaction, onClose }: TransactionEditD
   const [category, setCategory] = useState(transaction.category ?? "");
   const [state, action, pending] = useActionState(editTransaction, initialEditState);
 
-  const amountDelta = Number(amount) - transaction.amount;
+  const parsedAmount = editableAmount(amount);
+  const amountDelta = parsedAmount === null ? null : parsedAmount - transaction.amount;
   const showCreditDelta = transaction.creditCard
+    && amountDelta !== null
     && Number.isSafeInteger(amountDelta)
     && amountDelta !== 0;
+  const dirty = transactionEditIsDirty(transaction, amount, merchant, category);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -48,10 +57,11 @@ export function TransactionEditDialog({ transaction, onClose }: TransactionEditD
 
   useEffect(() => {
     if (state.status === "success") {
+      onSaved();
       router.refresh();
       dialogRef.current?.close();
     }
-  }, [router, state.status]);
+  }, [onSaved, router, state.status]);
 
   useEffect(() => {
     if (state.status !== "validation") return;
@@ -61,6 +71,7 @@ export function TransactionEditDialog({ transaction, onClose }: TransactionEditD
   }, [state]);
 
   function closeDialog(): void {
+    if (pending) return;
     dialogRef.current?.close();
   }
 
@@ -78,10 +89,11 @@ export function TransactionEditDialog({ transaction, onClose }: TransactionEditD
       ref={dialogRef}
       aria-labelledby={titleId}
       aria-describedby={state.status === "idle" ? undefined : statusId}
+      aria-busy={pending}
       onClose={onClose}
       onCancel={(event) => {
         event.preventDefault();
-        event.currentTarget.close();
+        if (!pending) event.currentTarget.close();
       }}
       className="transaction-edit-dialog motion-reduce:transition-none"
     >
@@ -94,8 +106,9 @@ export function TransactionEditDialog({ transaction, onClose }: TransactionEditD
           <button
             type="button"
             onClick={closeDialog}
+            disabled={pending}
             aria-label="Close transaction editor"
-            className="grid size-10 shrink-0 place-items-center rounded-lg border border-veyra-line text-xl text-slate-600 transition-colors hover:border-slate-300 hover:text-veyra-ink motion-reduce:transition-none"
+            className="grid size-10 shrink-0 place-items-center rounded-lg border border-veyra-line text-xl text-slate-600 transition-colors hover:border-slate-300 hover:text-veyra-ink disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none"
           >
             <span aria-hidden="true">×</span>
           </button>
@@ -201,8 +214,9 @@ export function TransactionEditDialog({ transaction, onClose }: TransactionEditD
 
             {state.status !== "conflict" && state.status !== "not_found" && (
               <footer className="flex flex-wrap justify-end gap-2 border-t border-veyra-line pt-4">
-                <button type="button" onClick={closeDialog} className="min-h-10 rounded-lg border border-veyra-line bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:text-veyra-ink motion-reduce:transition-none">Cancel</button>
-                <button type="submit" disabled={pending} className="min-h-10 rounded-lg bg-veyra-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none">
+                {!dirty && <p aria-live="polite" className="w-full text-right text-xs text-slate-500">Change amount, merchant, or category to save.</p>}
+                <button type="button" onClick={closeDialog} disabled={pending} className="min-h-10 rounded-lg border border-veyra-line bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:text-veyra-ink disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none">Cancel</button>
+                <button type="submit" disabled={pending || !dirty} className="min-h-10 rounded-lg bg-veyra-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none">
                   {pending ? "Saving…" : "Save changes"}
                 </button>
               </footer>

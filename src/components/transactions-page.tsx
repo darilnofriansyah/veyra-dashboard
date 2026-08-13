@@ -254,12 +254,18 @@ function TransactionTable({
 export function TransactionsPage({ result, filters, viewerName }: TransactionsPageProps) {
   const router = useRouter();
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [saveAnnouncement, setSaveAnnouncement] = useState("");
   const returnFocusRef = useRef<HTMLButtonElement | null>(null);
   const filterList = activeFilters(filters);
 
   const openEditor = useCallback((transaction: Transaction, button: HTMLButtonElement): void => {
     returnFocusRef.current = button;
+    setSaveAnnouncement("");
     setSelectedTransaction(transaction);
+  }, []);
+
+  const announceSaved = useCallback((): void => {
+    setSaveAnnouncement("Transaction saved.");
   }, []);
 
   const closeEditor = useCallback((): void => {
@@ -298,6 +304,7 @@ export function TransactionsPage({ result, filters, viewerName }: TransactionsPa
       mainId="transactions"
       skipLabel="Skip to transactions"
     >
+      <p role="status" aria-live="polite" className="sr-only">{saveAnnouncement}</p>
       <div className="mx-auto max-w-[1280px] space-y-4 xl:px-2 xl:py-1">
         <header className="flex flex-wrap items-end justify-between gap-3 border-b border-veyra-line pb-4">
           <div>
@@ -345,6 +352,7 @@ export function TransactionsPage({ result, filters, viewerName }: TransactionsPa
           key={selectedTransaction.id}
           transaction={selectedTransaction}
           onClose={closeEditor}
+          onSaved={announceSaved}
         />
       )}
     </AppShell>
