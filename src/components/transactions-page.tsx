@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { FormEvent } from "react";
+import { useCallback, useRef, useState, type FormEvent } from "react";
 import { AppShell } from "@/components/app-shell";
+import { TransactionEditDialog } from "@/components/transaction-edit-dialog";
 import { formatIdr } from "@/lib/finance";
-import type { TransactionPageData } from "@/lib/transaction-contract";
+import type { Transaction, TransactionPageData } from "@/lib/transaction-contract";
 import {
   transactionHref,
   type TransactionFilters
@@ -160,23 +161,43 @@ function FilterBar({
   );
 }
 
-function TransactionRow({ transaction }: { transaction: TransactionPageData["items"][number] }) {
+function TransactionRow({
+  transaction,
+  selected,
+  onEdit
+}: {
+  transaction: Transaction;
+  selected: boolean;
+  onEdit: (transaction: Transaction, button: HTMLButtonElement) => void;
+}) {
   const signedAmount = transaction.type === "income"
     ? transaction.amount
     : -transaction.amount;
+  const dateLabel = transactionDate.format(new Date(transaction.transactionDate));
+  const merchantLabel = transaction.merchant ?? "Unknown merchant";
   return (
-    <tr className="hover:bg-slate-50/80">
+    <tr className={selected ? "bg-sky-50 shadow-[inset_4px_0_0_var(--color-veyra-cyan)]" : "hover:bg-slate-50/80"}>
       <td className="whitespace-nowrap px-4 py-3 text-slate-600">
         <time dateTime={transaction.transactionDate}>
-          {transactionDate.format(new Date(transaction.transactionDate))}
+          {dateLabel}
         </time>
       </td>
-      <td className="px-4 py-3 font-semibold text-veyra-ink">{transaction.merchant ?? "Unknown merchant"}</td>
+      <td className="px-4 py-3 font-semibold text-veyra-ink">{merchantLabel}</td>
       <td className="px-4 py-3 text-slate-600">{transaction.category ?? "Uncategorized"}</td>
       <td className="px-4 py-3 capitalize text-slate-600">{transaction.source}</td>
       <td className="px-4 py-3 capitalize text-slate-600">{transaction.type}</td>
       <td className={`whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums ${transaction.type === "income" ? "text-veyra-success" : "text-veyra-ink"}`}>
         {transaction.type === "income" ? "+" : ""}{formatIdr(signedAmount)}
+      </td>
+      <td className="whitespace-nowrap px-4 py-3 text-right">
+        <button
+          type="button"
+          aria-label={`Edit transaction ${merchantLabel} on ${dateLabel}`}
+          onClick={(event) => onEdit(transaction, event.currentTarget)}
+          className="min-h-10 rounded-lg border border-veyra-line bg-white px-3 text-sm font-semibold text-sky-700 transition-colors hover:border-sky-200 hover:bg-sky-50 motion-reduce:transition-none"
+        >
+          Edit
+        </button>
       </td>
     </tr>
   );
@@ -192,7 +213,17 @@ function Pagination({ data, filters }: { data: TransactionPageData; filters: Tra
   );
 }
 
-function TransactionTable({ data, filters }: { data: TransactionPageData; filters: TransactionFilters }) {
+function TransactionTable({
+  data,
+  filters,
+  selectedTransactionId,
+  onEdit
+}: {
+  data: TransactionPageData;
+  filters: TransactionFilters;
+  selectedTransactionId: string | null;
+  onEdit: (transaction: Transaction, button: HTMLButtonElement) => void;
+}) {
   return <>
     <div className="overflow-x-auto rounded-veyra border border-veyra-line bg-white">
       <table className="w-full min-w-[760px] border-collapse text-left text-sm">
@@ -204,8 +235,16 @@ function TransactionTable({ data, filters }: { data: TransactionPageData; filter
           <th scope="col" className="px-4 py-3 font-semibold">Source</th>
           <th scope="col" className="px-4 py-3 font-semibold">Type</th>
           <th scope="col" className="px-4 py-3 text-right font-semibold tabular-nums">Amount</th>
+          <th scope="col" className="px-4 py-3 text-right font-semibold">Action</th>
         </tr></thead>
-        <tbody className="divide-y divide-veyra-line">{data.items.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} />)}</tbody>
+        <tbody className="divide-y divide-veyra-line">{data.items.map((transaction) => (
+          <TransactionRow
+            key={transaction.id}
+            transaction={transaction}
+            selected={transaction.id === selectedTransactionId}
+            onEdit={onEdit}
+          />
+        ))}</tbody>
       </table>
     </div>
     <Pagination data={data} filters={filters} />
@@ -214,7 +253,19 @@ function TransactionTable({ data, filters }: { data: TransactionPageData; filter
 
 export function TransactionsPage({ result, filters, viewerName }: TransactionsPageProps) {
   const router = useRouter();
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const returnFocusRef = useRef<HTMLButtonElement | null>(null);
   const filterList = activeFilters(filters);
+
+  const openEditor = useCallback((transaction: Transaction, button: HTMLButtonElement): void => {
+    returnFocusRef.current = button;
+    setSelectedTransaction(transaction);
+  }, []);
+
+  const closeEditor = useCallback((): void => {
+    setSelectedTransaction(null);
+    requestAnimationFrame(() => returnFocusRef.current?.focus());
+  }, []);
 
   function submitFilters(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -281,9 +332,21 @@ export function TransactionsPage({ result, filters, viewerName }: TransactionsPa
             )}
           </section>
         ) : (
-          <TransactionTable data={data} filters={filters} />
+          <TransactionTable
+            data={data}
+            filters={filters}
+            selectedTransactionId={selectedTransaction?.id ?? null}
+            onEdit={openEditor}
+          />
         )}
       </div>
+      {selectedTransaction && (
+        <TransactionEditDialog
+          key={selectedTransaction.id}
+          transaction={selectedTransaction}
+          onClose={closeEditor}
+        />
+      )}
     </AppShell>
   );
 }

@@ -259,7 +259,7 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.match(view, /name="search"[^>]*autoComplete="off"/);
 
   assert.match(view, /<caption[^>]*>Finalized transaction records<\/caption>/);
-  for (const heading of ["Date", "Merchant", "Category", "Source", "Type", "Amount"]) {
+  for (const heading of ["Date", "Merchant", "Category", "Source", "Type", "Amount", "Action"]) {
     assert.match(view, new RegExp(`<th scope="col"[^>]*>${heading}</th>`));
   }
   assert.match(view, /<time dateTime=\{transaction\.transactionDate\}>/);
@@ -276,7 +276,67 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.match(view, /direction: "next"/);
   assert.match(view, />Previous<\/Link>/);
   assert.match(view, />Next<\/Link>/);
-  assert.doesNotMatch(view, /Create transaction|New transaction|>Action<|>Edit</);
+  assert.doesNotMatch(view, /Create transaction|New transaction/);
+});
+
+test("edits a selected transaction in an accessible native side panel", async () => {
+  const [dialog, view, css] = await Promise.all([
+    readSource("src/components/transaction-edit-dialog.tsx"),
+    readSource("src/components/transactions-page.tsx"),
+    readSource("src/app/globals.css")
+  ]);
+
+  assert.match(dialog, /^"use client"/);
+  assert.match(dialog, /<dialog/);
+  assert.match(dialog, /\.showModal\(\)/);
+  assert.match(dialog, /useActionState\(editTransaction, initialEditState\)/);
+  assert.match(dialog, /onClose=\{onClose\}/);
+  assert.match(dialog, /onCancel=\{/);
+  assert.match(dialog, /motion-reduce:transition-none/);
+
+  for (const name of ["transactionId", "expectedUpdatedAt", "type"]) {
+    assert.match(dialog, new RegExp(`type="hidden" name="${name}"`));
+  }
+  for (const field of ["amount", "merchant", "category"]) {
+    assert.match(dialog, new RegExp(`name="${field}"`));
+  }
+  assert.match(dialog, /htmlFor=\{amountId\}/);
+  assert.match(dialog, /htmlFor=\{merchantId\}/);
+  assert.match(dialog, /htmlFor=\{categoryId\}/);
+  assert.match(dialog, /aria-describedby=\{/);
+  assert.match(dialog, /aria-invalid=\{/);
+  assert.match(dialog, /disabled=\{pending\}/);
+  assert.match(dialog, /state\.status === "validation"/);
+  assert.match(dialog, /state\.status === "conflict"/);
+  assert.match(dialog, />Reload transaction<\/button>/);
+  assert.match(dialog, /state\.status === "not_found"/);
+  assert.match(dialog, />Dismiss<\/button>/);
+  assert.match(dialog, /state\.status === "unavailable"/);
+  assert.match(dialog, /router\.refresh\(\)/);
+  assert.match(dialog, /Credit used will adjust by/);
+  assert.match(dialog, /transaction\.creditCard/);
+  assert.match(dialog, /Number\.isSafeInteger\(amountDelta\)/);
+  assert.match(dialog, /value=\{merchant\}/);
+  assert.match(dialog, /onChange=\{\(event\) => setMerchant\(event\.target\.value\)\}/);
+  assert.match(dialog, /value=\{category\}/);
+  assert.match(dialog, /onChange=\{\(event\) => setCategory\(event\.target\.value\)\}/);
+  assert.match(dialog, /transactionDate\.format\(new Date\(transaction\.transactionDate\)\)/);
+  assert.match(dialog, /transaction\.type/);
+  assert.match(dialog, /transaction\.source/);
+  assert.doesNotMatch(dialog, /name="(?:date|transactionDate|source)"/);
+  assert.doesNotMatch(dialog, /telegramUserId|CORE_API_KEY|NEXUS_CORE_URL/);
+
+  assert.match(view, /useState<Transaction \| null>/);
+  assert.match(view, /key=\{selectedTransaction\.id\}/);
+  assert.match(view, /<TransactionEditDialog/);
+  assert.match(view, /aria-label=\{`Edit transaction/);
+  assert.match(view, /returnFocusRef\.current\?\.focus\(\)/);
+  assert.match(view, /shadow-\[inset_4px_0_0_var\(--color-veyra-cyan\)\]/);
+
+  assert.match(css, /\.transaction-edit-dialog::backdrop/);
+  assert.match(css, /border-left:\s*4px solid var\(--color-veyra-cyan\)/);
+  assert.match(css, /@media \(max-width:\s*640px\)/);
+  assert.match(css, /@media \(prefers-reduced-motion:\s*reduce\)/);
 });
 
 test("edits transactions through an independently authenticated server action", async () => {
