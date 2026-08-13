@@ -40,6 +40,13 @@ test("redirects signed-out dashboard requests to login", async () => {
   assert.equal(response.headers.get("location"), "http://localhost/");
 });
 
+test("redirects signed-out transaction requests to login", async () => {
+  const response = await proxy(request("/transactions"));
+
+  assert.equal(response.status, 307);
+  assert.equal(response.headers.get("location"), "http://localhost/");
+});
+
 test("redirects a signed-in login request to the dashboard", async () => {
   const token = await createSessionToken(
     { telegramUserId: "976684739", name: "Kaito Ren" },
@@ -77,5 +84,5 @@ test("treats a tampered cookie as signed out and limits the matcher", async () =
 
   assert.equal(response.status, 307);
   assert.equal(response.headers.get("location"), "http://localhost/");
-  assert.deepEqual(proxyConfig.matcher, ["/", "/dashboard"]);
+  assert.deepEqual(proxyConfig.matcher, ["/", "/dashboard", "/transactions"]);
 });

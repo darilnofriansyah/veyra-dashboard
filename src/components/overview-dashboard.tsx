@@ -1,10 +1,10 @@
 "use client";
 
-import { CheckCircle, CreditCard, Gauge, House, Receipt, Sparkle, TrendUp, Wallet, Warning } from "@phosphor-icons/react";
+import { CheckCircle, CreditCard, Gauge, Receipt, Sparkle, TrendUp, Wallet, Warning } from "@phosphor-icons/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { logout } from "@/app/actions";
+import { AppShell } from "@/components/app-shell";
 import { CategoryBreakdown } from "@/components/category-breakdown";
 import { SpendingTrend } from "@/components/spending-trend";
 import { comparison } from "@/lib/dashboard-display";
@@ -49,13 +49,6 @@ export function OverviewDashboard({
   viewerName: string | null;
 }) {
   const [period, setPeriod] = useState<Period>("current");
-  const accountName = viewerName ?? "Telegram user";
-  const initials = accountName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
   const summary = data.data?.[period] ?? null;
   const creditUsage = summary
     ? creditUsagePercent(summary.creditCard.used, summary.creditCard.limit)
@@ -103,34 +96,13 @@ export function OverviewDashboard({
   ] : [];
 
   return (
-    <div className="min-h-dvh bg-[#f6f8fb] text-veyra-ink xl:grid xl:grid-cols-[216px_1fr]">
-      <a href="#overview" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-veyra-navy focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-white">Skip to overview</a>
-      <aside className="flex flex-wrap items-center gap-4 border-b border-veyra-line bg-white p-4 xl:block xl:min-h-dvh xl:border-b-0 xl:border-r xl:p-6">
-        <Image src="/assets/veyra-logo.png" width={840} height={194} sizes="124px" alt="Veyra" className="h-auto w-[124px]" preload />
-        <nav aria-label="Primary" className="order-2 basis-full xl:mt-8">
-          <a href="#overview" aria-current="page" className="flex items-center gap-2 rounded-lg border-l-[3px] border-veyra-cyan bg-sky-50 px-3 py-2.5 text-sm font-semibold text-sky-700 transition-colors motion-reduce:transition-none">
-            <House size={16} weight="duotone" aria-hidden="true" />
-            Overview
-          </a>
-        </nav>
-        <section aria-label="Current account" className="order-1 ml-auto flex min-w-0 items-center gap-3 xl:fixed xl:bottom-6 xl:ml-0">
-          <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-veyra-navy text-xs font-semibold text-white">{initials}</span>
-          <div className="min-w-0">
-            <strong className="block text-sm">{accountName}</strong>
-            <span className="text-xs text-slate-500">{cycleLabel}</span>
-            <form action={logout}>
-              <button
-                type="submit"
-                className="mt-1 block text-xs font-semibold text-sky-700 transition-colors hover:text-veyra-navy motion-reduce:transition-none"
-              >
-                Sign out
-              </button>
-            </form>
-          </div>
-        </section>
-      </aside>
-
-      <main id="overview" className="p-4">
+    <AppShell
+      activePage="overview"
+      viewerName={viewerName}
+      accountContext={cycleLabel}
+      mainId="overview"
+      skipLabel="Skip to overview"
+    >
         <header className="mb-2.5 flex flex-wrap items-start justify-between gap-2.5">
           <div><h1 className="text-2xl font-bold">Overview</h1><p className="mt-1 text-sm text-slate-500">Here’s your financial summary.</p></div>
           <label><span className="sr-only">Period</span>
@@ -265,7 +237,6 @@ export function OverviewDashboard({
             </section>
           </>
         )}
-      </main>
-    </div>
+    </AppShell>
   );
 }

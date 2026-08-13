@@ -167,9 +167,30 @@ test("keeps the loading header responsive and announces the pending overview", a
 });
 
 test("offers keyboard users a skip link", async () => {
-  const dashboard = await readSource("src/components/overview-dashboard.tsx");
+  const [dashboard, shell] = await Promise.all([
+    readSource("src/components/overview-dashboard.tsx"),
+    readSource("src/components/app-shell.tsx")
+  ]);
 
-  assert.match(dashboard, /href="#overview"[^>]+>Skip to overview</);
+  assert.match(shell, /href=\{`#\$\{mainId\}`\}/);
+  assert.match(shell, />\{skipLabel\}<\/a>/);
+  assert.match(dashboard, /mainId="overview"/);
+  assert.match(dashboard, /skipLabel="Skip to overview"/);
+});
+
+test("shares route-aware authenticated navigation across app pages", async () => {
+  const [dashboard, shell] = await Promise.all([
+    readSource("src/components/overview-dashboard.tsx"),
+    readSource("src/components/app-shell.tsx")
+  ]);
+
+  assert.match(dashboard, /import \{ AppShell \} from "@\/components\/app-shell"/);
+  assert.match(dashboard, /<AppShell[\s\S]*activePage="overview"/);
+  assert.match(shell, /import Link from "next\/link"/);
+  assert.match(shell, /<Link[\s\S]*href="\/dashboard"[\s\S]*>\s*[\s\S]*Overview\s*<\/Link>/);
+  assert.match(shell, /<Link[\s\S]*href="\/transactions"[\s\S]*>\s*[\s\S]*Transactions\s*<\/Link>/);
+  assert.match(shell, /aria-current=\{activePage === "overview" \? "page" : undefined\}/);
+  assert.match(shell, /aria-current=\{activePage === "transactions" \? "page" : undefined\}/);
 });
 
 test("offers only real Telegram login and safe provider errors", async () => {
