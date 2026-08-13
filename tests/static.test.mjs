@@ -272,6 +272,9 @@ test("renders the protected URL-filtered finalized transaction list", async () =
     view,
     /<p role="status" aria-live="polite" aria-atomic="true" className="sr-only">\{resultAnnouncement\}<\/p>/
   );
+  assert.match(view, /useState\(\s*\(\) => nextTransactionAnnouncementNavigation\(null, filters\)\s*\)/);
+  assert.match(view, /useEffect\(\(\) => \{[\s\S]*nextTransactionAnnouncementNavigation\(previous, filters\)/);
+  assert.match(view, /navigationAwareTransactionResultAnnouncement\(result, announcementNavigation\)/);
   const resultStatus = view.indexOf('{resultAnnouncement}</p>');
   const resultBranches = view.indexOf("{unavailable ? (");
   assert.ok(resultStatus >= 0 && resultStatus < resultBranches);

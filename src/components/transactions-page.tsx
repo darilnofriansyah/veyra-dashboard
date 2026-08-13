@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { AppShell } from "@/components/app-shell";
 import { TransactionEditDialog } from "@/components/transaction-edit-dialog";
 import { formatIdr } from "@/lib/finance";
@@ -12,7 +12,10 @@ import {
   type TransactionFilters
 } from "@/lib/transaction-filters";
 import type { LoadTransactionsResult } from "@/lib/transactions-api";
-import { transactionResultAnnouncement } from "@/lib/transaction-result-announcement";
+import {
+  navigationAwareTransactionResultAnnouncement,
+  nextTransactionAnnouncementNavigation
+} from "@/lib/transaction-result-announcement";
 
 interface TransactionsPageProps {
   result: LoadTransactionsResult;
@@ -256,8 +259,17 @@ export function TransactionsPage({ result, filters, viewerName }: TransactionsPa
   const router = useRouter();
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [saveAnnouncement, setSaveAnnouncement] = useState("");
+  const [announcementNavigation, setAnnouncementNavigation] = useState(
+    () => nextTransactionAnnouncementNavigation(null, filters)
+  );
   const returnFocusRef = useRef<HTMLButtonElement | null>(null);
   const filterList = activeFilters(filters);
+
+  useEffect(() => {
+    setAnnouncementNavigation((previous) =>
+      nextTransactionAnnouncementNavigation(previous, filters)
+    );
+  }, [filters]);
 
   const openEditor = useCallback((transaction: Transaction, button: HTMLButtonElement): void => {
     returnFocusRef.current = button;
@@ -290,7 +302,7 @@ export function TransactionsPage({ result, filters, viewerName }: TransactionsPa
   const unavailable = result.error || !data;
   const pageCount = data?.items.length ?? 0;
   const pageCountLabel = `${pageCount} ${pageCount === 1 ? "transaction" : "transactions"} on this page`;
-  const resultAnnouncement = transactionResultAnnouncement(result, filterList.length > 0);
+  const resultAnnouncement = navigationAwareTransactionResultAnnouncement(result, announcementNavigation);
   const clearHref = transactionHref(filters, {
     cycle: null,
     category: null,
