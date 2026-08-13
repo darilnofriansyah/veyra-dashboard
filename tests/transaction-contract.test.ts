@@ -84,6 +84,19 @@ test("rejects fractional, zero, and unsafe edit amounts", () => {
   }
 });
 
+test("rejects duplicate amount values instead of accepting the first one", () => {
+  const form = validEditForm();
+  form.append("amount", "40000");
+
+  assert.deepEqual(parseTransactionEditForm(form), {
+    ok: false,
+    state: {
+      status: "validation",
+      fieldErrors: { amount: "Enter a positive whole-rupiah amount." }
+    }
+  });
+});
+
 test("requires merchant and category text for expense edits", () => {
   const form = validEditForm();
   form.set("merchant", "   ");
@@ -115,6 +128,29 @@ test("normalizes blank income edit metadata to null", () => {
       category: null
     }
   });
+});
+
+test("rejects duplicate or file-valued income metadata", () => {
+  const duplicate = validEditForm();
+  duplicate.set("type", "income");
+  duplicate.append("merchant", "Salary");
+
+  const file = validEditForm();
+  file.set("type", "income");
+  file.set("merchant", new Blob(["merchant"]), "merchant.txt");
+
+  for (const form of [duplicate, file]) {
+    const parsed = parseTransactionEditForm(form);
+    assert.equal(parsed.ok, false);
+    if (!parsed.ok) assert.ok(parsed.state.fieldErrors.merchant);
+  }
+});
+
+test("rejects a file-valued transaction ID", () => {
+  const form = validEditForm();
+  form.set("transactionId", new Blob(["123"]), "transaction-id.txt");
+
+  assert.equal(parseTransactionEditForm(form).ok, false);
 });
 
 test("rejects malformed optimistic-version timestamps", () => {

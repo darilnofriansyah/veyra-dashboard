@@ -120,21 +120,26 @@ function cursor(value: unknown, name: string): string | null {
   return value === null ? null : text(value, name, MAX_CURSOR_LENGTH);
 }
 
-function trimmedFormText(formData: FormData, name: string): string | null {
-  const value = formData.get(name);
-  return typeof value === "string" ? value.trim() || null : null;
+function singleFormString(formData: FormData, name: string): string | undefined {
+  const values = formData.getAll(name);
+  return values.length === 1 && typeof values[0] === "string" ? values[0] : undefined;
 }
 
 function editText(
-  value: string | null,
+  value: string | undefined,
   field: "merchant" | "category",
   errors: Partial<Record<"amount" | "merchant" | "category", string>>,
   type: TransactionType
 ): string | null {
-  if (value && value.length <= MAX_TEXT_LENGTH) return value;
-  if (!value && type === "income") return null;
+  if (value === undefined) {
+    errors[field] = `Provide exactly one ${field} value.`;
+    return null;
+  }
+  const normalized = value.trim();
+  if (normalized && normalized.length <= MAX_TEXT_LENGTH) return normalized;
+  if (!normalized && type === "income") return null;
 
-  errors[field] = value
+  errors[field] = normalized
     ? `${field === "merchant" ? "Merchant" : "Category"} must be 200 characters or fewer.`
     : `${field === "merchant" ? "Merchant" : "Category"} is required for expenses.`;
   return null;
@@ -187,10 +192,10 @@ export function parseTransactionPageData(value: unknown): TransactionPageData {
 
 export function parseTransactionEditForm(formData: FormData): ParsedTransactionEdit {
   const errors: Partial<Record<"amount" | "merchant" | "category", string>> = {};
-  const transactionId = trimmedFormText(formData, "transactionId");
-  const expectedUpdatedAt = trimmedFormText(formData, "expectedUpdatedAt");
-  const typeValue = trimmedFormText(formData, "type");
-  const amountValue = trimmedFormText(formData, "amount");
+  const transactionId = singleFormString(formData, "transactionId")?.trim();
+  const expectedUpdatedAt = singleFormString(formData, "expectedUpdatedAt")?.trim();
+  const typeValue = singleFormString(formData, "type")?.trim();
+  const amountValue = singleFormString(formData, "amount")?.trim();
   const type = typeValue && TYPES.has(typeValue as TransactionType)
     ? typeValue as TransactionType
     : null;
@@ -202,8 +207,18 @@ export function parseTransactionEditForm(formData: FormData): ParsedTransactionE
     errors.amount = "Enter a positive whole-rupiah amount.";
   }
 
-  const merchant = editText(trimmedFormText(formData, "merchant"), "merchant", errors, type ?? "expense");
-  const category = editText(trimmedFormText(formData, "category"), "category", errors, type ?? "expense");
+  const merchant = editText(
+    singleFormString(formData, "merchant"),
+    "merchant",
+    errors,
+    type ?? "expense"
+  );
+  const category = editText(
+    singleFormString(formData, "category"),
+    "category",
+    errors,
+    type ?? "expense"
+  );
 
   if (
     !transactionId
