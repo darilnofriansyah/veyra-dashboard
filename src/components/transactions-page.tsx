@@ -12,6 +12,7 @@ import {
   type TransactionFilters
 } from "@/lib/transaction-filters";
 import type { LoadTransactionsResult } from "@/lib/transactions-api";
+import { transactionResultAnnouncement } from "@/lib/transaction-result-announcement";
 
 interface TransactionsPageProps {
   result: LoadTransactionsResult;
@@ -289,6 +290,7 @@ export function TransactionsPage({ result, filters, viewerName }: TransactionsPa
   const unavailable = result.error || !data;
   const pageCount = data?.items.length ?? 0;
   const pageCountLabel = `${pageCount} ${pageCount === 1 ? "transaction" : "transactions"} on this page`;
+  const resultAnnouncement = transactionResultAnnouncement(result, filterList.length > 0);
   const clearHref = transactionHref(filters, {
     cycle: null,
     category: null,
@@ -305,6 +307,7 @@ export function TransactionsPage({ result, filters, viewerName }: TransactionsPa
       skipLabel="Skip to transactions"
     >
       <p role="status" aria-live="polite" className="sr-only">{saveAnnouncement}</p>
+      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">{resultAnnouncement}</p>
       <div className="mx-auto max-w-[1280px] space-y-4 xl:px-2 xl:py-1">
         <header className="flex flex-wrap items-end justify-between gap-3 border-b border-veyra-line pb-4">
           <div>
@@ -318,7 +321,7 @@ export function TransactionsPage({ result, filters, viewerName }: TransactionsPa
         <FilterBar data={data} filters={filters} onSubmit={submitFilters} />
 
         {unavailable ? (
-          <section role="status" className="rounded-veyra border border-veyra-line bg-white p-8 text-center">
+          <section className="rounded-veyra border border-veyra-line bg-white p-8 text-center">
             <h2 className="text-lg font-bold">Transactions couldn’t be loaded</h2>
             <p className="mt-1 text-sm text-slate-600">Your filters are still available. Try loading the records again.</p>
             <button type="button" onClick={() => router.refresh()} className="mt-4 rounded-lg bg-veyra-navy px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 motion-reduce:transition-none">Retry</button>

@@ -268,6 +268,14 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.match(view, /<th scope="col" className="[^"]*tabular-nums[^"]*">Amount<\/th>/);
   assert.match(view, /<td className=\{`[^"]*tabular-nums/);
   assert.match(view, /transactions?"\} on this page/);
+  assert.match(
+    view,
+    /<p role="status" aria-live="polite" aria-atomic="true" className="sr-only">\{resultAnnouncement\}<\/p>/
+  );
+  const resultStatus = view.indexOf('{resultAnnouncement}</p>');
+  const resultBranches = view.indexOf("{unavailable ? (");
+  assert.ok(resultStatus >= 0 && resultStatus < resultBranches);
+  assert.doesNotMatch(view, /<section role="status"[^>]*>\s*<h2[^>]*>Transactions couldn’t be loaded/);
   assert.match(view, /Transactions recorded through Telegram or email will appear here\./);
   assert.match(view, /No finalized transactions match these filters\./);
   assert.match(view, /router\.refresh\(\)/);
