@@ -87,6 +87,16 @@ function queryBody(input: LoadTransactionsInput): JsonBody {
   return body;
 }
 
+function updateBody(telegramUserId: string, input: TransactionEditInput): JsonBody {
+  return {
+    telegramUserId,
+    amount: input.amount,
+    merchant: input.merchant,
+    category: input.category,
+    expectedUpdatedAt: input.expectedUpdatedAt
+  };
+}
+
 function requestOptions(method: "POST" | "PATCH", body: JsonBody): RequestInit {
   return {
     method,
@@ -113,7 +123,7 @@ export async function loadTransactions(
       `${coreUrl()}/api/veyra/transactions/query`,
       requestOptions("POST", queryBody(input))
     );
-    if (!response.ok) return queryError();
+    if (response.status !== 200) return queryError();
     return { data: parseTransactionPageData(await response.json()), error: false };
   } catch {
     return queryError();
@@ -133,7 +143,7 @@ export async function updateTransaction(
   try {
     const response = await fetchImpl(
       `${coreUrl()}/api/veyra/transactions/${encodeURIComponent(transactionId)}`,
-      requestOptions("PATCH", { telegramUserId, ...input })
+      requestOptions("PATCH", updateBody(telegramUserId, input))
     );
     if (response.status === 400) return { status: "validation", fieldErrors: {} };
     if (response.status === 404) return { status: "not_found" };

@@ -56,35 +56,38 @@ async function withEnvironment(
 }
 
 test("posts one uncached user-scoped transaction query", async () => {
-  const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
-  const loaded = await loadTransactions({
-    telegramUserId: "976684739",
-    asOfDate: "2026-08-13",
-    filters: {
-      cycle: "current", category: "Dining", type: "expense",
-      search: "tuku", cursor: "cursor-1", direction: "next"
-    }
-  }, async (input, init) => {
-    calls.push({ input, init });
-    return Response.json(validTransactionPage);
-  });
+  await withEnvironment({ NEXUS_CORE_URL: undefined, CORE_API_KEY: undefined }, async () => {
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const loaded = await loadTransactions({
+      telegramUserId: "976684739",
+      asOfDate: "2026-08-13",
+      filters: {
+        cycle: "current", category: "Dining", type: "expense",
+        search: "tuku", cursor: "cursor-1", direction: "next"
+      }
+    }, async (input, init) => {
+      calls.push({ input, init });
+      return Response.json(validTransactionPage);
+    });
 
-  assert.equal(loaded.error, false);
-  assert.deepEqual(loaded.data, validTransactionPage);
-  assert.equal(String(calls[0]?.input), "http://core-api:3000/api/veyra/transactions/query");
-  assert.equal(calls[0]?.init?.method, "POST");
-  assert.equal(calls[0]?.init?.cache, "no-store");
-  assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
-    telegramUserId: "976684739",
-    asOfDate: "2026-08-13",
-    timezone: "Asia/Jakarta",
-    limit: 50,
-    cycle: "current",
-    category: "Dining",
-    type: "expense",
-    merchantQuery: "tuku",
-    cursor: "cursor-1",
-    direction: "next"
+    assert.equal(loaded.error, false);
+    assert.deepEqual(loaded.data, validTransactionPage);
+    assert.equal(String(calls[0]?.input), "http://core-api:3000/api/veyra/transactions/query");
+    assert.equal(calls[0]?.init?.method, "POST");
+    assert.equal(calls[0]?.init?.cache, "no-store");
+    assert.deepEqual(calls[0]?.init?.headers, { "content-type": "application/json" });
+    assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
+      telegramUserId: "976684739",
+      asOfDate: "2026-08-13",
+      timezone: "Asia/Jakarta",
+      limit: 50,
+      cycle: "current",
+      category: "Dining",
+      type: "expense",
+      merchantQuery: "tuku",
+      cursor: "cursor-1",
+      direction: "next"
+    });
   });
 });
 
@@ -124,21 +127,24 @@ test("includes Core credentials, removes trailing slashes, and uses a five-secon
 });
 
 test("omits inactive transaction query filters", async () => {
-  const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
-  await loadTransactions({
-    telegramUserId: "976684739",
-    asOfDate: "2026-08-13",
-    filters: { cycle: null, category: null, type: null, search: null, cursor: null, direction: null }
-  }, async (input, init) => {
-    calls.push({ input, init });
-    return Response.json(validTransactionPage);
-  });
+  await withEnvironment({ NEXUS_CORE_URL: undefined, CORE_API_KEY: undefined }, async () => {
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    await loadTransactions({
+      telegramUserId: "976684739",
+      asOfDate: "2026-08-13",
+      filters: { cycle: null, category: null, type: null, search: null, cursor: null, direction: null }
+    }, async (input, init) => {
+      calls.push({ input, init });
+      return Response.json(validTransactionPage);
+    });
 
-  assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
-    telegramUserId: "976684739",
-    asOfDate: "2026-08-13",
-    timezone: "Asia/Jakarta",
-    limit: 50
+    assert.deepEqual(calls[0]?.init?.headers, { "content-type": "application/json" });
+    assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
+      telegramUserId: "976684739",
+      asOfDate: "2026-08-13",
+      timezone: "Asia/Jakarta",
+      limit: 50
+    });
   });
 });
 
@@ -180,6 +186,19 @@ test("maps unsafe query responses to one safe error result", async () => {
   }
 });
 
+test("rejects every non-200 query response even with valid JSON", async () => {
+  for (const response of [
+    Response.json(validTransactionPage, { status: 201 }),
+    new Response(null, { status: 204 })
+  ]) {
+    assert.deepEqual(await loadTransactions({
+      telegramUserId: "976684739",
+      asOfDate: "2026-08-13",
+      filters: { cycle: null, category: null, type: null, search: null, cursor: null, direction: null }
+    }, async () => response), { data: null, error: true });
+  }
+});
+
 test("patches a transaction with the optimistic version and parses strict success", async () => {
   const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
   const updated = await updateTransaction("976684739", "123", validInput, async (input, init) => {
@@ -191,6 +210,24 @@ test("patches a transaction with the optimistic version and parses strict succes
   assert.equal(String(calls[0]?.input), "http://core-api:3000/api/veyra/transactions/123");
   assert.equal(calls[0]?.init?.method, "PATCH");
   assert.equal(calls[0]?.init?.cache, "no-store");
+  assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
+    telegramUserId: "976684739",
+    amount: 30_000,
+    merchant: "Tuku Kemang",
+    category: "Dining",
+    expectedUpdatedAt: "2026-08-13T03:01:00.000Z"
+  });
+});
+
+test("does not forward surplus runtime PATCH input properties", async () => {
+  const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+  const input = { ...validInput, upstreamOnly: "do-not-forward" };
+
+  await updateTransaction("976684739", "123", input, async (request, init) => {
+    calls.push({ input: request, init });
+    return Response.json(validTransaction);
+  });
+
   assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
     telegramUserId: "976684739",
     amount: 30_000,
