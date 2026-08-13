@@ -16,7 +16,7 @@ export default function Loading() {
           <div className="h-8 w-40 rounded bg-slate-200" />
           <div className="mt-2 h-5 w-72 max-w-full rounded bg-slate-200" />
         </header>
-        <span className="sr-only">Loading transactions…</span>
+        <span role="status" aria-live="polite" className="sr-only">Loading transactions…</span>
         <section aria-label="Transaction filters" className="rounded-veyra border border-veyra-line bg-white p-4">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1.2fr_1fr_1.5fr_auto] xl:items-end">
             {Array.from({ length: 5 }, (_, index) => (

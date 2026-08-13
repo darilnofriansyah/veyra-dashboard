@@ -373,6 +373,7 @@ test("keeps transaction loading stable and documents correction boundary", async
   ]);
 
   assert.match(loading, /aria-label="Loading transactions…"/);
+  assert.match(loading, /role="status" aria-live="polite"/);
   assert.match(loading, />Loading transactions…<\/span>/);
   assert.match(loading, /Transaction filters/);
   assert.match(loading, /Finalized transaction records/);
