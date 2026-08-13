@@ -104,7 +104,7 @@ function FilterControls({ data, filters }: {
       </label>
       <label className="text-sm font-semibold text-slate-700">
         <span>Merchant search</span>
-        <input name="search" type="search" defaultValue={filters.search ?? ""} maxLength={200} className={fieldClass} />
+        <input name="search" type="search" autoComplete="off" defaultValue={filters.search ?? ""} maxLength={200} className={fieldClass} />
       </label>
     </>
   );
@@ -118,13 +118,13 @@ function ActiveFilterChips({ filters }: { filters: TransactionFilters }) {
     cycle: null, category: null, type: null, search: null
   });
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-2" aria-label="Active filters">
+    <div aria-label="Active filters" className="mt-4 flex min-w-0 flex-wrap items-center gap-2">
       {filterList.map((filter) => (
         <Link
           key={filter.key}
           href={transactionHref(filters, { [filter.key]: null })}
           aria-label={`Remove ${filter.label} filter: ${filter.value}`}
-          className="inline-flex min-h-8 items-center rounded-full bg-sky-50 px-3 text-xs font-semibold text-sky-800 transition-colors hover:bg-sky-100 motion-reduce:transition-none"
+          className="inline-flex min-h-8 max-w-full min-w-0 items-center break-words rounded-full bg-sky-50 px-3 text-xs font-semibold text-sky-800 transition-colors hover:bg-sky-100 motion-reduce:transition-none"
         >
           {filter.label}: {filter.value} <span aria-hidden="true" className="ml-2">×</span>
         </Link>
@@ -146,7 +146,7 @@ function FilterBar({
   return (
     <section aria-label="Transaction filters" className="rounded-veyra border border-veyra-line bg-white p-4">
       <form
-        key={[filters.cycle, filters.category, filters.type, filters.search].join("|")}
+        key={JSON.stringify([filters.cycle, filters.category, filters.type, filters.search])}
         onSubmit={onSubmit}
         className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1.2fr_1fr_1.5fr_auto] xl:items-end"
       >
@@ -175,7 +175,7 @@ function TransactionRow({ transaction }: { transaction: TransactionPageData["ite
       <td className="px-4 py-3 text-slate-600">{transaction.category ?? "Uncategorized"}</td>
       <td className="px-4 py-3 capitalize text-slate-600">{transaction.source}</td>
       <td className="px-4 py-3 capitalize text-slate-600">{transaction.type}</td>
-      <td className={`whitespace-nowrap px-4 py-3 text-right font-semibold ${transaction.type === "income" ? "text-veyra-success" : "text-veyra-ink"}`}>
+      <td className={`whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums ${transaction.type === "income" ? "text-veyra-success" : "text-veyra-ink"}`}>
         {transaction.type === "income" ? "+" : ""}{formatIdr(signedAmount)}
       </td>
     </tr>
@@ -203,7 +203,7 @@ function TransactionTable({ data, filters }: { data: TransactionPageData; filter
           <th scope="col" className="px-4 py-3 font-semibold">Category</th>
           <th scope="col" className="px-4 py-3 font-semibold">Source</th>
           <th scope="col" className="px-4 py-3 font-semibold">Type</th>
-          <th scope="col" className="px-4 py-3 text-right font-semibold">Amount</th>
+          <th scope="col" className="px-4 py-3 text-right font-semibold tabular-nums">Amount</th>
         </tr></thead>
         <tbody className="divide-y divide-veyra-line">{data.items.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} />)}</tbody>
       </table>
@@ -263,7 +263,7 @@ export function TransactionsPage({ result, filters, viewerName }: TransactionsPa
           <section role="status" className="rounded-veyra border border-veyra-line bg-white p-8 text-center">
             <h2 className="text-lg font-bold">Transactions couldn’t be loaded</h2>
             <p className="mt-1 text-sm text-slate-600">Your filters are still available. Try loading the records again.</p>
-            <button type="button" onClick={() => router.refresh()} className="mt-4 rounded-lg bg-veyra-navy px-4 py-2.5 text-sm font-semibold text-white">Retry</button>
+            <button type="button" onClick={() => router.refresh()} className="mt-4 rounded-lg bg-veyra-navy px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 motion-reduce:transition-none">Retry</button>
           </section>
         ) : data.items.length === 0 ? (
           <section className="rounded-veyra border border-veyra-line bg-white p-8 text-center">

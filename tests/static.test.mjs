@@ -247,6 +247,16 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.match(view, /router\.push\(transactionHref\(filters, changes\)\)/);
   assert.match(view, /transactionHref\(filters, \{ \[filter\.key\]: null \}\)/);
   assert.match(view, />Clear filters<\/Link>/);
+  const delimiterCategoryKey = JSON.stringify([null, "a|income", null, null]);
+  const categoryAndTypeKey = JSON.stringify([null, "a", "income", null]);
+  assert.notEqual(delimiterCategoryKey, categoryAndTypeKey);
+  assert.match(
+    view,
+    /key=\{JSON\.stringify\(\[filters\.cycle, filters\.category, filters\.type, filters\.search\]\)\}/
+  );
+  assert.match(view, /aria-label="Active filters"[^>]*className="[^"]*min-w-0/);
+  assert.match(view, /aria-label=\{`Remove[^>]*className="[^"]*max-w-full[^"]*min-w-0[^"]*break-words/);
+  assert.match(view, /name="search"[^>]*autoComplete="off"/);
 
   assert.match(view, /<caption[^>]*>Finalized transaction records<\/caption>/);
   for (const heading of ["Date", "Merchant", "Category", "Source", "Type", "Amount"]) {
@@ -255,11 +265,13 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.match(view, /<time dateTime=\{transaction\.transactionDate\}>/);
   assert.match(view, /transaction\.type === "income" \? "\+" : ""/);
   assert.match(view, /formatIdr\(signedAmount\)/);
+  assert.match(view, /<th scope="col" className="[^"]*tabular-nums[^"]*">Amount<\/th>/);
+  assert.match(view, /<td className=\{`[^"]*tabular-nums/);
   assert.match(view, /transactions?"\} on this page/);
   assert.match(view, /Transactions recorded through Telegram or email will appear here\./);
   assert.match(view, /No finalized transactions match these filters\./);
   assert.match(view, /router\.refresh\(\)/);
-  assert.match(view, />Retry<\/button>/);
+  assert.match(view, /className="[^"]*transition-colors[^"]*hover:bg-veyra-navy-2[^"]*motion-reduce:transition-none">Retry<\/button>/);
   assert.match(view, /direction: "previous"/);
   assert.match(view, /direction: "next"/);
   assert.match(view, />Previous<\/Link>/);
