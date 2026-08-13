@@ -5,13 +5,6 @@ interface TransactionResult {
   error: boolean;
 }
 
-export interface TransactionAnnouncementNavigation {
-  signature: string;
-  revision: number;
-  hasActiveFilters: boolean;
-  description: string;
-}
-
 function navigationSignature(filters: TransactionFilters): string {
   return JSON.stringify([
     filters.cycle,
@@ -48,23 +41,6 @@ function pageDescription(filters: TransactionFilters): string {
   return "Changed result page.";
 }
 
-export function nextTransactionAnnouncementNavigation(
-  previous: TransactionAnnouncementNavigation | null,
-  filters: TransactionFilters
-): TransactionAnnouncementNavigation {
-  const signature = navigationSignature(filters);
-  if (previous?.signature === signature) return previous;
-
-  const revision = (previous?.revision ?? 0) + 1;
-  const filter = filterDescription(filters);
-  return {
-    signature,
-    revision,
-    hasActiveFilters: filter.active,
-    description: `${filter.text} ${pageDescription(filters)} Results update ${revision}.`
-  };
-}
-
 export function transactionResultAnnouncement(
   result: TransactionResult,
   hasActiveFilters: boolean
@@ -81,9 +57,13 @@ export function transactionResultAnnouncement(
     : "No finalized transactions yet.";
 }
 
-export function navigationAwareTransactionResultAnnouncement(
+export function transactionResultAnnouncementModel(
   result: TransactionResult,
-  navigation: TransactionAnnouncementNavigation
-): string {
-  return `${transactionResultAnnouncement(result, navigation.hasActiveFilters)} ${navigation.description}`;
+  filters: TransactionFilters
+): { key: string; message: string } {
+  const filter = filterDescription(filters);
+  return {
+    key: navigationSignature(filters),
+    message: `${transactionResultAnnouncement(result, filter.active)} ${filter.text} ${pageDescription(filters)}`
+  };
 }

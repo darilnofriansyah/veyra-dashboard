@@ -270,12 +270,11 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.match(view, /transactions?"\} on this page/);
   assert.match(
     view,
-    /<p role="status" aria-live="polite" aria-atomic="true" className="sr-only">\{resultAnnouncement\}<\/p>/
+    /<p role="status" aria-live="polite" aria-atomic="true" className="sr-only">\s*<span key=\{resultAnnouncement\.key\}>\{resultAnnouncement\.message\}<\/span>\s*<\/p>/
   );
-  assert.match(view, /useState\(\s*\(\) => nextTransactionAnnouncementNavigation\(null, filters\)\s*\)/);
-  assert.match(view, /useEffect\(\(\) => \{[\s\S]*nextTransactionAnnouncementNavigation\(previous, filters\)/);
-  assert.match(view, /navigationAwareTransactionResultAnnouncement\(result, announcementNavigation\)/);
-  const resultStatus = view.indexOf('{resultAnnouncement}</p>');
+  assert.match(view, /transactionResultAnnouncementModel\(result, filters\)/);
+  assert.doesNotMatch(view, /announcementNavigation|nextTransactionAnnouncementNavigation|navigationAwareTransactionResultAnnouncement/);
+  const resultStatus = view.indexOf('<span key={resultAnnouncement.key}>');
   const resultBranches = view.indexOf("{unavailable ? (");
   assert.ok(resultStatus >= 0 && resultStatus < resultBranches);
   assert.doesNotMatch(view, /<section role="status"[^>]*>\s*<h2[^>]*>Transactions couldn’t be loaded/);

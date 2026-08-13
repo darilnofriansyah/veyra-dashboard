@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useRef, useState, type FormEvent } from "react";
 import { AppShell } from "@/components/app-shell";
 import { TransactionEditDialog } from "@/components/transaction-edit-dialog";
 import { formatIdr } from "@/lib/finance";
@@ -12,10 +12,7 @@ import {
   type TransactionFilters
 } from "@/lib/transaction-filters";
 import type { LoadTransactionsResult } from "@/lib/transactions-api";
-import {
-  navigationAwareTransactionResultAnnouncement,
-  nextTransactionAnnouncementNavigation
-} from "@/lib/transaction-result-announcement";
+import { transactionResultAnnouncementModel } from "@/lib/transaction-result-announcement";
 
 interface TransactionsPageProps {
   result: LoadTransactionsResult;
@@ -259,17 +256,8 @@ export function TransactionsPage({ result, filters, viewerName }: TransactionsPa
   const router = useRouter();
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [saveAnnouncement, setSaveAnnouncement] = useState("");
-  const [announcementNavigation, setAnnouncementNavigation] = useState(
-    () => nextTransactionAnnouncementNavigation(null, filters)
-  );
   const returnFocusRef = useRef<HTMLButtonElement | null>(null);
   const filterList = activeFilters(filters);
-
-  useEffect(() => {
-    setAnnouncementNavigation((previous) =>
-      nextTransactionAnnouncementNavigation(previous, filters)
-    );
-  }, [filters]);
 
   const openEditor = useCallback((transaction: Transaction, button: HTMLButtonElement): void => {
     returnFocusRef.current = button;
@@ -302,7 +290,7 @@ export function TransactionsPage({ result, filters, viewerName }: TransactionsPa
   const unavailable = result.error || !data;
   const pageCount = data?.items.length ?? 0;
   const pageCountLabel = `${pageCount} ${pageCount === 1 ? "transaction" : "transactions"} on this page`;
-  const resultAnnouncement = navigationAwareTransactionResultAnnouncement(result, announcementNavigation);
+  const resultAnnouncement = transactionResultAnnouncementModel(result, filters);
   const clearHref = transactionHref(filters, {
     cycle: null,
     category: null,
@@ -319,7 +307,9 @@ export function TransactionsPage({ result, filters, viewerName }: TransactionsPa
       skipLabel="Skip to transactions"
     >
       <p role="status" aria-live="polite" className="sr-only">{saveAnnouncement}</p>
-      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">{resultAnnouncement}</p>
+      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        <span key={resultAnnouncement.key}>{resultAnnouncement.message}</span>
+      </p>
       <div className="mx-auto max-w-[1280px] space-y-4 xl:px-2 xl:py-1">
         <header className="flex flex-wrap items-end justify-between gap-3 border-b border-veyra-line pb-4">
           <div>
