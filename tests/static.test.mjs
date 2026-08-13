@@ -279,6 +279,20 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.doesNotMatch(view, /Create transaction|New transaction|>Action<|>Edit</);
 });
 
+test("edits transactions through an independently authenticated server action", async () => {
+  const actions = await readSource("src/app/transactions/actions.ts");
+
+  assert.match(actions, /^"use server"/);
+  assert.match(actions, /verifySessionToken/);
+  assert.match(actions, /\(await cookies\(\)\)\.get\(SESSION_COOKIE\)\?\.value/);
+  assert.match(actions, /parseTransactionEditForm\(formData\)/);
+  assert.match(actions, /updateTransaction\(session\.telegramUserId, transactionId, input\)/);
+  assert.match(actions, /if \(result\.status === "success"\) \{[\s\S]*revalidatePath\("\/transactions"\);[\s\S]*revalidatePath\("\/dashboard"\);/);
+  assert.match(actions, /Promise<TransactionEditState>/);
+  assert.doesNotMatch(actions, /formData\.(?:get|getAll)\(["']telegramUserId["']/);
+  assert.doesNotMatch(actions, /redirect\(/);
+});
+
 test("offers only real Telegram login and safe provider errors", async () => {
   const [loginPage, actions] = await Promise.all([
     readSource("src/app/page.tsx"),
