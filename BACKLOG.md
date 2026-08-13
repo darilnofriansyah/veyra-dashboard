@@ -7,6 +7,18 @@ records; checked or unchecked boxes there do not represent the current backlog.
 
 ## Current work
 
+### B-005 — Deliver transaction list and corrections
+
+- **Status:** Active; awaiting cross-repository verification.
+- **Evidence:** The isolated feature branch contains the protected
+  `/transactions` route, visible URL-backed filters, cursor paging, and
+  side-panel corrections for amount, merchant, and category. Core query and
+  PATCH deployment compatibility plus full test/build evidence remain pending.
+- **Dependencies:** Core transaction query and PATCH endpoints must deploy
+  before Veyra; final cross-repository contract and interaction verification.
+- **Complete when:** Full Veyra and Core verification passes, contract fields
+  match, interaction QA succeeds, and exact command evidence is recorded here.
+
 ### B-003 — Verify live integrations, deployment, and weekly review scheduling
 
 - **Status:** Partially verified on 2026-08-11; controlled end-to-end checks remain.

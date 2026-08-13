@@ -1,10 +1,12 @@
 # Veyra
 
-Veyra is a read-only financial dashboard. A signed-in user can inspect the
-current and previous billing cycles, cash-flow totals, spending trends,
-categories, budgets, recent transactions, alerts, and a combined credit-card
-summary. Veyra does not create or edit financial records; it renders data from
-the Core API.
+Veyra is a financial dashboard and transaction-correction interface. A
+signed-in user can inspect current and previous billing cycles, cash-flow
+totals, spending trends, categories, budgets, recent transactions, alerts, a
+combined credit-card summary, and finalized transaction records. Users can
+correct an older transaction's amount, merchant, or category; Telegram and
+email ingestion remain the only creation paths. Veyra renders and corrects
+records through the Core API.
 
 Current work is tracked in [`BACKLOG.md`](BACKLOG.md). Historical implementation
 plans are supporting records, not an active task list.
@@ -148,6 +150,42 @@ Network failures, timeouts, non-success responses, invalid identities,
 malformed JSON, and contract drift all become one safe unavailable state. The
 dashboard displays a retry control and does not expose the upstream response.
 
+### Transactions and corrections
+
+The protected `/transactions` page queries only Core-confirmed income and
+expense records. It uses one uncached, server-side request to:
+
+```text
+POST <NEXUS_CORE_URL>/api/veyra/transactions/query
+```
+
+The query sends the verified Telegram user ID from the server-side session,
+Jakarta calendar date, fixed `Asia/Jakarta` timezone, and validated visible
+cycle, category, type, merchant-search, and opaque cursor filters. Browser
+input never controls identity, and neither Core URL nor API key reaches a
+client component.
+
+Saving a transaction correction sends a separate, independently authenticated
+server action request to:
+
+```text
+PATCH <NEXUS_CORE_URL>/api/veyra/transactions/:transactionId
+```
+
+Only amount, merchant, and category are editable. The request includes the
+last observed `updatedAt` value, so Core can reject a stale correction with a
+conflict instead of overwriting newer data. Veyra keeps the editor open for
+field validation, conflict, not-found, and unavailable results; a successful
+save refreshes the current transactions URL and dashboard data.
+
+For an eligible email credit-card expense, an amount correction atomically
+applies its signed delta to cycle `credit_used`. Merchant and category edits do
+not affect credit usage, and transaction editing never changes the credit limit
+or statement balance.
+
+Deploy the Core transaction query and PATCH endpoints before deploying this
+Veyra page. Veyra validates both endpoint responses before rendering them.
+
 ## Telegram authentication
 
 1. The login page links to `GET /auth/telegram`.
@@ -219,6 +257,12 @@ or alter cron as part of application deployment.
   user provisioning and authorization are owned by Core.
 - **The overview is unavailable:** check Core DNS/network membership, the base
   URL, API-key policy, the five-second timeout, and response-contract drift.
+- **Transactions are unavailable:** check the same Core connection and API-key
+  policy, then confirm Core query and PATCH endpoints were deployed before
+  Veyra.
+- **A transaction save conflicts:** another correction changed the record after
+  this page loaded. Reload the transaction, review its current values, then
+  apply the correction again.
 - **Compose cannot start:** confirm `veyra-network` exists and that host port
   `3001` is free. If using the default URL, confirm Core is attached to the same
   network with the `core-api` name or alias.
@@ -226,8 +270,9 @@ or alter cron as part of application deployment.
   production checkout and a non-fast-forward pull. Inspect the host checkout;
   do not discard changes automatically.
 
-Veyra owns browser rendering, Telegram OIDC/session handling, the server-side
-Core request, and response validation. Core owns financial calculations, data,
+Veyra owns browser rendering, Telegram OIDC/session handling, server-side Core
+requests, edit-form validation, and response validation. Core owns financial
+calculations, data, transaction persistence, credit-card `credit_used` updates,
 user provisioning, and authorization. The production operator owns runtime
 environment files, network wiring, deployed-revision evidence, and cron. Never
 copy secrets into issues, logs, test fixtures, or review documents.

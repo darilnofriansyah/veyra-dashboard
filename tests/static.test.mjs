@@ -365,6 +365,31 @@ test("edits transactions through an independently authenticated server action", 
   assert.doesNotMatch(actions, /redirect\(/);
 });
 
+test("keeps transaction loading stable and documents correction boundary", async () => {
+  const [loading, readme, backlog] = await Promise.all([
+    readSource("src/app/transactions/loading.tsx"),
+    readSource("README.md"),
+    readSource("BACKLOG.md")
+  ]);
+
+  assert.match(loading, /aria-label="Loading transactions…"/);
+  assert.match(loading, />Loading transactions…<\/span>/);
+  assert.match(loading, /Transaction filters/);
+  assert.match(loading, /Finalized transaction records/);
+  assert.match(loading, /animate-pulse/);
+  assert.doesNotMatch(loading, /IDR\s*[0-9]/);
+
+  assert.match(readme, /POST <NEXUS_CORE_URL>\/api\/veyra\/transactions\/query/);
+  assert.match(readme, /PATCH <NEXUS_CORE_URL>\/api\/veyra\/transactions\/:transactionId/);
+  assert.match(readme, /verified Telegram user ID.*server-side/i);
+  assert.match(readme, /amount, merchant, and category/i);
+  assert.match(readme, /conflict/i);
+  assert.match(readme, /credit_used/i);
+  assert.doesNotMatch(readme, /Veyra is a read-only financial dashboard\./);
+  assert.match(backlog, /B-005 — Deliver transaction list and corrections/);
+  assert.match(backlog, /Status:\*\* Active/);
+});
+
 test("offers only real Telegram login and safe provider errors", async () => {
   const [loginPage, actions] = await Promise.all([
     readSource("src/app/page.tsx"),
