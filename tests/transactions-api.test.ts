@@ -170,75 +170,85 @@ test("rejects invalid query identity and date without calling Core", async () =>
 });
 
 test("maps unsafe query responses to one safe error result", async () => {
-  const responses: Array<() => Promise<Response>> = [
-    async () => new Response("secret upstream response", { status: 500 }),
-    async () => { throw new Error("connection failed"); },
-    async () => new Response("{", { headers: { "content-type": "application/json" } }),
-    async () => Response.json({ ...validTransactionPage, categories: ["Dining", "Dining"] })
-  ];
+  await withEnvironment({ NEXUS_CORE_URL: undefined, CORE_API_KEY: undefined }, async () => {
+    const responses: Array<() => Promise<Response>> = [
+      async () => new Response("secret upstream response", { status: 500 }),
+      async () => { throw new Error("connection failed"); },
+      async () => new Response("{", { headers: { "content-type": "application/json" } }),
+      async () => Response.json({ ...validTransactionPage, categories: ["Dining", "Dining"] })
+    ];
 
-  for (const respond of responses) {
-    assert.deepEqual(await loadTransactions({
-      telegramUserId: "976684739",
-      asOfDate: "2026-08-13",
-      filters: { cycle: null, category: null, type: null, search: null, cursor: null, direction: null }
-    }, respond), { data: null, error: true });
-  }
+    for (const respond of responses) {
+      assert.deepEqual(await loadTransactions({
+        telegramUserId: "976684739",
+        asOfDate: "2026-08-13",
+        filters: { cycle: null, category: null, type: null, search: null, cursor: null, direction: null }
+      }, respond), { data: null, error: true });
+    }
+  });
 });
 
 test("rejects every non-200 query response even with valid JSON", async () => {
-  for (const response of [
-    Response.json(validTransactionPage, { status: 201 }),
-    new Response(null, { status: 204 })
-  ]) {
-    assert.deepEqual(await loadTransactions({
-      telegramUserId: "976684739",
-      asOfDate: "2026-08-13",
-      filters: { cycle: null, category: null, type: null, search: null, cursor: null, direction: null }
-    }, async () => response), { data: null, error: true });
-  }
+  await withEnvironment({ NEXUS_CORE_URL: undefined, CORE_API_KEY: undefined }, async () => {
+    for (const response of [
+      Response.json(validTransactionPage, { status: 201 }),
+      new Response(null, { status: 204 })
+    ]) {
+      assert.deepEqual(await loadTransactions({
+        telegramUserId: "976684739",
+        asOfDate: "2026-08-13",
+        filters: { cycle: null, category: null, type: null, search: null, cursor: null, direction: null }
+      }, async () => response), { data: null, error: true });
+    }
+  });
 });
 
 test("patches a transaction with the optimistic version and parses strict success", async () => {
-  const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
-  const updated = await updateTransaction("976684739", "123", validInput, async (input, init) => {
-    calls.push({ input, init });
-    return Response.json(validTransaction);
-  });
+  await withEnvironment({ NEXUS_CORE_URL: undefined, CORE_API_KEY: undefined }, async () => {
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const updated = await updateTransaction("976684739", "123", validInput, async (input, init) => {
+      calls.push({ input, init });
+      return Response.json(validTransaction);
+    });
 
-  assert.deepEqual(updated, { status: "success", transaction: validTransaction });
-  assert.equal(String(calls[0]?.input), "http://core-api:3000/api/veyra/transactions/123");
-  assert.equal(calls[0]?.init?.method, "PATCH");
-  assert.equal(calls[0]?.init?.cache, "no-store");
-  assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
-    telegramUserId: "976684739",
-    amount: 30_000,
-    merchant: "Tuku Kemang",
-    category: "Dining",
-    expectedUpdatedAt: "2026-08-13T03:01:00.000Z"
+    assert.deepEqual(updated, { status: "success", transaction: validTransaction });
+    assert.equal(String(calls[0]?.input), "http://core-api:3000/api/veyra/transactions/123");
+    assert.equal(calls[0]?.init?.method, "PATCH");
+    assert.equal(calls[0]?.init?.cache, "no-store");
+    assert.deepEqual(calls[0]?.init?.headers, { "content-type": "application/json" });
+    assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
+      telegramUserId: "976684739",
+      amount: 30_000,
+      merchant: "Tuku Kemang",
+      category: "Dining",
+      expectedUpdatedAt: "2026-08-13T03:01:00.000Z"
+    });
   });
 });
 
 test("does not forward surplus runtime PATCH input properties", async () => {
-  const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
-  const input = { ...validInput, upstreamOnly: "do-not-forward" };
+  await withEnvironment({ NEXUS_CORE_URL: undefined, CORE_API_KEY: undefined }, async () => {
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const input = { ...validInput, upstreamOnly: "do-not-forward" };
 
-  await updateTransaction("976684739", "123", input, async (request, init) => {
-    calls.push({ input: request, init });
-    return Response.json(validTransaction);
-  });
+    await updateTransaction("976684739", "123", input, async (request, init) => {
+      calls.push({ input: request, init });
+      return Response.json(validTransaction);
+    });
 
-  assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
-    telegramUserId: "976684739",
-    amount: 30_000,
-    merchant: "Tuku Kemang",
-    category: "Dining",
-    expectedUpdatedAt: "2026-08-13T03:01:00.000Z"
+    assert.deepEqual(calls[0]?.init?.headers, { "content-type": "application/json" });
+    assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
+      telegramUserId: "976684739",
+      amount: 30_000,
+      merchant: "Tuku Kemang",
+      category: "Dining",
+      expectedUpdatedAt: "2026-08-13T03:01:00.000Z"
+    });
   });
 });
 
 test("patches with Core credentials and a five-second timeout", async () => {
-  await withEnvironment({ CORE_API_KEY: "test-key" }, async () => {
+  await withEnvironment({ NEXUS_CORE_URL: undefined, CORE_API_KEY: "test-key" }, async () => {
     const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
     const timeout = AbortSignal.timeout;
     const timeouts: number[] = [];
@@ -277,33 +287,37 @@ test("rejects update identity and transaction ID without calling Core", async ()
 });
 
 test("maps exact PATCH error statuses without forwarding Core responses", async () => {
-  for (const [status, expected] of [
-    [400, { status: "validation", fieldErrors: {} }],
-    [404, { status: "not_found" }],
-    [409, { status: "conflict" }],
-    [500, { status: "unavailable" }]
-  ] as const) {
-    assert.deepEqual(
-      await updateTransaction("976684739", "123", validInput, async () =>
-        new Response("secret upstream response", { status })
-      ),
-      expected
-    );
-  }
+  await withEnvironment({ NEXUS_CORE_URL: undefined, CORE_API_KEY: undefined }, async () => {
+    for (const [status, expected] of [
+      [400, { status: "validation", fieldErrors: {} }],
+      [404, { status: "not_found" }],
+      [409, { status: "conflict" }],
+      [500, { status: "unavailable" }]
+    ] as const) {
+      assert.deepEqual(
+        await updateTransaction("976684739", "123", validInput, async () =>
+          new Response("secret upstream response", { status })
+        ),
+        expected
+      );
+    }
 
-  assert.deepEqual(
-    await updateTransaction("976684739", "123", validInput, async () => {
-      throw new Error("connection failed");
-    }),
-    { status: "unavailable" }
-  );
+    assert.deepEqual(
+      await updateTransaction("976684739", "123", validInput, async () => {
+        throw new Error("connection failed");
+      }),
+      { status: "unavailable" }
+    );
+  });
 });
 
 test("maps malformed PATCH success data to unavailable", async () => {
-  assert.deepEqual(
-    await updateTransaction("976684739", "123", validInput, async () =>
-      Response.json({ ...validTransaction, type: "transfer" })
-    ),
-    { status: "unavailable" }
-  );
+  await withEnvironment({ NEXUS_CORE_URL: undefined, CORE_API_KEY: undefined }, async () => {
+    assert.deepEqual(
+      await updateTransaction("976684739", "123", validInput, async () =>
+        Response.json({ ...validTransaction, type: "transfer" })
+      ),
+      { status: "unavailable" }
+    );
+  });
 });
