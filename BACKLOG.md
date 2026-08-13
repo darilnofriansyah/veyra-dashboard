@@ -9,15 +9,22 @@ records; checked or unchecked boxes there do not represent the current backlog.
 
 ### B-005 — Deliver transaction list and corrections
 
-- **Status:** Active; awaiting cross-repository verification.
-- **Evidence:** The isolated feature branch contains the protected
-  `/transactions` route, visible URL-backed filters, cursor paging, and
-  side-panel corrections for amount, merchant, and category. Core query and
-  PATCH deployment compatibility plus full test/build evidence remain pending.
-- **Dependencies:** Core transaction query and PATCH endpoints must deploy
-  before Veyra; final cross-repository contract and interaction verification.
-- **Complete when:** Full Veyra and Core verification passes, contract fields
-  match, interaction QA succeeds, and exact command evidence is recorded here.
+- **Status:** Active; implementation and automated cross-repository verification
+  completed on 2026-08-13, awaiting real-browser interaction QA only.
+- **Evidence:** Veyra's full suite passed 12/12 test files, its production build
+  passed with `/transactions` in the route output, and TypeScript plus diff
+  checks passed. Core at `5cf383d` passed 460/460 tests, lint, build, and diff
+  checks. Query/PATCH paths, filters, cursors, cycle and as-of semantics,
+  request/response fields, nullability, timestamps, categories, status mapping,
+  and credit-card behavior match across repositories. Real-browser QA could not
+  run because no browser, Playwright installation, authenticated session, or
+  controllable Core fixture was available.
+- **Dependencies:** Deploy the Core transaction query and PATCH endpoints before
+  Veyra. Provide a browser test environment, authenticated fixture, and
+  controllable Core responses for final interaction QA.
+- **Complete when:** Desktop/mobile layout, URL history and cursor navigation,
+  keyboard dialog behavior and focus, result states, reduced motion, horizontal
+  scrolling, and positive/negative credit-card delta notes pass in a real browser.
 
 ### B-003 — Verify live integrations, deployment, and weekly review scheduling
 
