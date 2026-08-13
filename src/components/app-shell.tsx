@@ -59,11 +59,11 @@ export function AppShell({
             Transactions
           </Link>
         </nav>
-        <section aria-label="Current account" className="order-1 ml-auto flex min-w-0 items-center gap-3 xl:fixed xl:bottom-6 xl:ml-0">
-          <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-veyra-navy text-xs font-semibold text-white">{initials}</span>
-          <div className="min-w-0">
-            <strong className="block text-sm">{accountName}</strong>
-            <span className="text-xs text-slate-500">{accountContext}</span>
+        <section aria-label="Current account" className="order-1 ml-auto flex min-w-0 items-center gap-3 xl:fixed xl:bottom-6 xl:left-6 xl:ml-0 xl:w-[168px]">
+          <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-full bg-veyra-navy text-xs font-semibold text-white">{initials}</span>
+          <div className="min-w-0 flex-1">
+            <strong className="block min-w-0 break-words text-sm">{accountName}</strong>
+            <span className="block min-w-0 break-words text-xs text-slate-500">{accountContext}</span>
             <form action={logout}>
               <button
                 type="submit"

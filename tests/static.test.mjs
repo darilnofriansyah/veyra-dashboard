@@ -183,14 +183,35 @@ test("shares route-aware authenticated navigation across app pages", async () =>
     readSource("src/components/overview-dashboard.tsx"),
     readSource("src/components/app-shell.tsx")
   ]);
+  const overviewLinkStart = shell.indexOf('<Link\n            href="/dashboard"');
+  const overviewLinkEnd = shell.indexOf("</Link>", overviewLinkStart);
+  const transactionsLinkStart = shell.indexOf('<Link\n            href="/transactions"');
+  const transactionsLinkEnd = shell.indexOf("</Link>", transactionsLinkStart);
+  const overviewLink = shell.slice(overviewLinkStart, overviewLinkEnd);
+  const transactionsLink = shell.slice(transactionsLinkStart, transactionsLinkEnd);
 
   assert.match(dashboard, /import \{ AppShell \} from "@\/components\/app-shell"/);
   assert.match(dashboard, /<AppShell[\s\S]*activePage="overview"/);
   assert.match(shell, /import Link from "next\/link"/);
-  assert.match(shell, /<Link[\s\S]*href="\/dashboard"[\s\S]*>\s*[\s\S]*Overview\s*<\/Link>/);
-  assert.match(shell, /<Link[\s\S]*href="\/transactions"[\s\S]*>\s*[\s\S]*Transactions\s*<\/Link>/);
-  assert.match(shell, /aria-current=\{activePage === "overview" \? "page" : undefined\}/);
-  assert.match(shell, /aria-current=\{activePage === "transactions" \? "page" : undefined\}/);
+  assert.ok(overviewLinkStart >= 0 && overviewLinkEnd > overviewLinkStart);
+  assert.ok(transactionsLinkStart > overviewLinkEnd && transactionsLinkEnd > transactionsLinkStart);
+  assert.match(overviewLink, /href="\/dashboard"/);
+  assert.match(overviewLink, /\bOverview\b/);
+  assert.match(overviewLink, /aria-current=\{activePage === "overview" \? "page" : undefined\}/);
+  assert.match(overviewLink, /className=\{activePage === "overview" \? activeLink : inactiveLink\}/);
+  assert.match(transactionsLink, /href="\/transactions"/);
+  assert.match(transactionsLink, /\bTransactions\b/);
+  assert.match(transactionsLink, /aria-current=\{activePage === "transactions" \? "page" : undefined\}/);
+  assert.match(transactionsLink, /className=\{activePage === "transactions" \? activeLink : inactiveLink\}/);
+  assert.match(shell, /const activeLink = "[^"]*border-veyra-cyan[^"]*bg-sky-50[^"]*text-sky-700/);
+});
+
+test("contains long account details inside the desktop sidebar", async () => {
+  const shell = await readSource("src/components/app-shell.tsx");
+
+  assert.match(shell, /aria-label="Current account"[^>]+xl:left-6[^>]+xl:w-\[168px\]/);
+  assert.match(shell, /<strong className="[^"]*min-w-0[^"]*break-words[^"]*">\{accountName\}<\/strong>/);
+  assert.match(shell, /<span className="[^"]*min-w-0[^"]*break-words[^"]*">\{accountContext\}<\/span>/);
 });
 
 test("offers only real Telegram login and safe provider errors", async () => {
