@@ -38,6 +38,18 @@ test("parses an income response with nullable metadata", () => {
   assert.deepEqual(parseTransaction(income), income);
 });
 
+test("accepts incomplete legacy expense metadata for display", () => {
+  const parsed = parseTransaction({
+    ...expense,
+    merchant: null,
+    category: null,
+  });
+
+  assert.equal(parsed.type, "expense");
+  assert.equal(parsed.merchant, null);
+  assert.equal(parsed.category, null);
+});
+
 test("parses a transaction page with nullable cursors", () => {
   assert.deepEqual(parseTransactionPageData({
     items: [expense, income],

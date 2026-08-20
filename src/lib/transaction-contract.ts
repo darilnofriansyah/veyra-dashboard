@@ -150,9 +150,6 @@ export function parseTransaction(value: unknown): Transaction {
   const type = transactionType(item.type, "transaction.type");
   const merchant = nullableText(item.merchant, "transaction.merchant");
   const category = nullableText(item.category, "transaction.category");
-  if (type === "expense" && (!merchant || !category)) {
-    throw new Error("Invalid expense metadata");
-  }
   if (typeof item.creditCard !== "boolean") {
     throw new Error("Invalid transaction.creditCard");
   }
