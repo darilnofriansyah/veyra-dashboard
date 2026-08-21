@@ -168,7 +168,7 @@ export async function loadPockets(
       `${coreUrl()}/api/veyra/budgets/pockets/list`,
       requestOptions("POST", { userId: telegramUserId })
     );
-    if (response.status !== 200) return pocketsError();
+    if (response.status !== 200 && response.status !== 201) return pocketsError();
     return { pockets: parsePockets(await response.json()), error: false };
   } catch {
     return pocketsError();

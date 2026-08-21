@@ -157,12 +157,12 @@ test("omits inactive transaction query filters", async () => {
   });
 });
 
-test("loads only the signed-in user's active pockets", async () => {
+test("accepts the pocket-list endpoint's created response", async () => {
   await withEnvironment({ NEXUS_CORE_URL: undefined, CORE_API_KEY: undefined }, async () => {
     const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
     const result = await loadPockets("976684739", async (input, init) => {
       calls.push({ input, init });
-      return Response.json(validPockets);
+      return Response.json(validPockets, { status: 201 });
     });
 
     assert.deepEqual(result, { pockets: validPockets.pockets, error: false });
