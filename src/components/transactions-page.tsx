@@ -187,6 +187,7 @@ function TransactionRow({
       </td>
       <td className="px-4 py-3 font-semibold text-veyra-ink">{merchantLabel}</td>
       <td className="px-4 py-3 text-slate-600">{transaction.category ?? "Uncategorized"}</td>
+      <td className="px-4 py-3 text-slate-600">{transaction.pocketName ?? "No pocket"}</td>
       <td className="px-4 py-3 capitalize text-slate-600">{transaction.source}</td>
       <td className="px-4 py-3 capitalize text-slate-600">{transaction.type}</td>
       <td className={`whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums ${transaction.type === "income" ? "text-veyra-success" : "text-veyra-ink"}`}>
@@ -235,6 +236,7 @@ function TransactionTable({
           <th scope="col" className="px-4 py-3 font-semibold">Date</th>
           <th scope="col" className="px-4 py-3 font-semibold">Merchant</th>
           <th scope="col" className="px-4 py-3 font-semibold">Category</th>
+          <th scope="col" className="px-4 py-3 font-semibold">Pocket</th>
           <th scope="col" className="px-4 py-3 font-semibold">Source</th>
           <th scope="col" className="px-4 py-3 font-semibold">Type</th>
           <th scope="col" className="px-4 py-3 text-right font-semibold tabular-nums">Amount</th>

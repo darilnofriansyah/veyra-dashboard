@@ -261,10 +261,11 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.match(view, /name="search"[^>]*autoComplete="off"/);
 
   assert.match(view, /<caption[^>]*>Finalized transaction records<\/caption>/);
-  for (const heading of ["Date", "Merchant", "Category", "Source", "Type", "Amount", "Action"]) {
+  for (const heading of ["Date", "Merchant", "Category", "Pocket", "Source", "Type", "Amount", "Action"]) {
     assert.match(view, new RegExp(`<th scope="col"[^>]*>${heading}</th>`));
   }
   assert.match(view, /<time dateTime=\{transaction\.transactionDate\}>/);
+  assert.match(view, /transaction\.pocketName \?\? "No pocket"/);
   assert.match(view, /transaction\.type === "income" \? "\+" : ""/);
   assert.match(view, /formatIdr\(signedAmount\)/);
   assert.match(view, /<th scope="col" className="[^"]*tabular-nums[^"]*">Amount<\/th>/);
