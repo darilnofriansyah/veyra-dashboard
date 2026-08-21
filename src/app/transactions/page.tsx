@@ -5,7 +5,7 @@ import { connection } from "next/server";
 import { TransactionsPage } from "@/components/transactions-page";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import { parseTransactionFilters } from "@/lib/transaction-filters";
-import { loadTransactions } from "@/lib/transactions-api";
+import { loadPockets, loadTransactions } from "@/lib/transactions-api";
 
 export const metadata: Metadata = {
   title: "Transactions",
@@ -33,15 +33,20 @@ export default async function Page({ searchParams }: PageProps) {
   if (!session) redirect("/");
 
   const filters = parseTransactionFilters(await searchParams);
-  const result = await loadTransactions({
-    telegramUserId: session.telegramUserId,
-    asOfDate: jakartaToday(),
-    filters
-  });
+  const [result, pocketResult] = await Promise.all([
+    loadTransactions({
+      telegramUserId: session.telegramUserId,
+      asOfDate: jakartaToday(),
+      filters
+    }),
+    loadPockets(session.telegramUserId)
+  ]);
 
   return (
     <TransactionsPage
       result={result}
+      pockets={pocketResult.pockets}
+      pocketsUnavailable={pocketResult.error}
       filters={filters}
       viewerName={session.name}
     />

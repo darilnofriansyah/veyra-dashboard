@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { editTransaction } from "@/app/transactions/actions";
 import { formatIdr } from "@/lib/finance";
 import { editableAmount, transactionEditIsDirty } from "@/lib/transaction-edit-form";
-import type { Transaction, TransactionEditState } from "@/lib/transaction-contract";
+import type { Pocket, Transaction, TransactionEditState } from "@/lib/transaction-contract";
 
 interface TransactionEditDialogProps {
   transaction: Transaction;
+  pockets: Pocket[];
+  pocketsUnavailable: boolean;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -24,6 +26,8 @@ const transactionDate = new Intl.DateTimeFormat("en", {
 
 export function TransactionEditDialog({
   transaction,
+  pockets,
+  pocketsUnavailable,
   onClose,
   onSaved
 }: TransactionEditDialogProps) {
@@ -32,14 +36,17 @@ export function TransactionEditDialog({
   const amountRef = useRef<HTMLInputElement>(null);
   const merchantRef = useRef<HTMLInputElement>(null);
   const categoryRef = useRef<HTMLInputElement>(null);
+  const pocketRef = useRef<HTMLSelectElement>(null);
   const amountId = useId();
   const merchantId = useId();
   const categoryId = useId();
+  const pocketId = useId();
   const titleId = useId();
   const statusId = useId();
   const [amount, setAmount] = useState(String(transaction.amount));
   const [merchant, setMerchant] = useState(transaction.merchant ?? "");
   const [category, setCategory] = useState(transaction.category ?? "");
+  const [selectedPocketId, setPocketId] = useState(transaction.pocketId ?? "");
   const [state, action, pending] = useActionState(editTransaction, initialEditState);
 
   const parsedAmount = editableAmount(amount);
@@ -48,7 +55,10 @@ export function TransactionEditDialog({
     && amountDelta !== null
     && Number.isSafeInteger(amountDelta)
     && amountDelta !== 0;
-  const dirty = transactionEditIsDirty(transaction, amount, merchant, category);
+  const dirty = transactionEditIsDirty(transaction, amount, merchant, category, selectedPocketId);
+  const pocketOptions = transaction.pocketId && !pockets.some((pocket) => pocket.id === transaction.pocketId)
+    ? [{ id: transaction.pocketId, name: transaction.pocketName ?? "Current pocket", amount: null, isDefault: false }, ...pockets]
+    : pockets;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -68,6 +78,7 @@ export function TransactionEditDialog({
     if (state.fieldErrors.amount) amountRef.current?.focus();
     else if (state.fieldErrors.merchant) merchantRef.current?.focus();
     else if (state.fieldErrors.category) categoryRef.current?.focus();
+    else if (state.fieldErrors.pocketId) pocketRef.current?.focus();
   }, [state]);
 
   function closeDialog(): void {
@@ -83,6 +94,7 @@ export function TransactionEditDialog({
   const amountError = state.status === "validation" ? state.fieldErrors.amount : undefined;
   const merchantError = state.status === "validation" ? state.fieldErrors.merchant : undefined;
   const categoryError = state.status === "validation" ? state.fieldErrors.category : undefined;
+  const pocketError = state.status === "validation" ? state.fieldErrors.pocketId : undefined;
 
   return (
     <dialog
@@ -212,9 +224,30 @@ export function TransactionEditDialog({
               {categoryError && <p id={`${categoryId}-error`} className="mt-1 text-sm text-veyra-danger">{categoryError}</p>}
             </div>
 
+            <div>
+              <label htmlFor={pocketId} className="text-sm font-semibold text-slate-700">Pocket</label>
+              <select
+                ref={pocketRef}
+                id={pocketId}
+                name="pocketId"
+                value={selectedPocketId}
+                onChange={(event) => setPocketId(event.target.value)}
+                disabled={pending || pocketsUnavailable}
+                aria-invalid={Boolean(pocketError)}
+                aria-describedby={pocketError ? `${pocketId}-error` : pocketsUnavailable ? `${pocketId}-note` : undefined}
+                className={inputClass}
+              >
+                <option value="">No pocket</option>
+                {pocketOptions.map((pocket) => <option key={pocket.id} value={pocket.id}>{pocket.name}</option>)}
+              </select>
+              {pocketsUnavailable && <input type="hidden" name="pocketId" value={selectedPocketId} />}
+              {pocketError && <p id={`${pocketId}-error`} className="mt-1 text-sm text-veyra-danger">{pocketError}</p>}
+              {pocketsUnavailable && <p id={`${pocketId}-note`} className="mt-1 text-sm text-slate-600">Pockets couldn’t be loaded.</p>}
+            </div>
+
             {state.status !== "conflict" && state.status !== "not_found" && (
               <footer className="flex flex-wrap justify-end gap-2 border-t border-veyra-line pt-4">
-                {!dirty && <p aria-live="polite" className="w-full text-right text-xs text-slate-500">Change amount, merchant, or category to save.</p>}
+                {!dirty && <p aria-live="polite" className="w-full text-right text-xs text-slate-500">Change amount, merchant, category, or pocket to save.</p>}
                 <button type="button" onClick={closeDialog} disabled={pending} className="min-h-10 rounded-lg border border-veyra-line bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:text-veyra-ink disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none">Cancel</button>
                 <button type="submit" disabled={pending || !dirty} className="min-h-10 rounded-lg bg-veyra-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none">
                   {pending ? "Saving…" : "Save changes"}

@@ -6,6 +6,8 @@ export interface Transaction {
   amount: number;
   merchant: string | null;
   category: string | null;
+  pocketId: string | null;
+  pocketName: string | null;
   type: TransactionType;
   source: TransactionSource;
   transactionDate: string;
@@ -25,13 +27,23 @@ export interface TransactionEditInput {
   amount: number;
   merchant: string | null;
   category: string | null;
+  pocketId: string | null;
 }
+
+export interface Pocket {
+  id: string;
+  name: string;
+  amount: number | null;
+  isDefault: boolean;
+}
+
+type TransactionEditField = "amount" | "merchant" | "category" | "pocketId";
 
 export type TransactionEditState =
   | { status: "idle" }
   | {
     status: "validation";
-    fieldErrors: Partial<Record<"amount" | "merchant" | "category", string>>;
+    fieldErrors: Partial<Record<TransactionEditField, string>>;
   }
   | { status: "conflict" }
   | { status: "not_found" }
@@ -128,7 +140,7 @@ function singleFormString(formData: FormData, name: string): string | undefined 
 function editText(
   value: string | undefined,
   field: "merchant" | "category",
-  errors: Partial<Record<"amount" | "merchant" | "category", string>>,
+  errors: Partial<Record<TransactionEditField, string>>,
   type: TransactionType
 ): string | null {
   if (value === undefined) {
@@ -145,11 +157,32 @@ function editText(
   return null;
 }
 
+function editPocket(
+  value: string | undefined,
+  errors: Partial<Record<TransactionEditField, string>>
+): string | null {
+  if (value === undefined) {
+    errors.pocketId = "Provide exactly one pocket ID.";
+    return null;
+  }
+  const pocketId = value.trim();
+  if (!pocketId) return null;
+  if (/^[1-9]\d*$/.test(pocketId)) return pocketId;
+
+  errors.pocketId = "Select a valid pocket.";
+  return null;
+}
+
 export function parseTransaction(value: unknown): Transaction {
   const item = object(value, "transaction");
   const type = transactionType(item.type, "transaction.type");
   const merchant = nullableText(item.merchant, "transaction.merchant");
   const category = nullableText(item.category, "transaction.category");
+  const pocketId = item.pocketId === null ? null : positiveId(item.pocketId, "transaction.pocketId");
+  const pocketName = nullableText(item.pocketName, "transaction.pocketName");
+  if ((pocketId === null) !== (pocketName === null)) {
+    throw new Error("Invalid transaction pocket");
+  }
   if (typeof item.creditCard !== "boolean") {
     throw new Error("Invalid transaction.creditCard");
   }
@@ -159,6 +192,8 @@ export function parseTransaction(value: unknown): Transaction {
     amount: positiveRupiah(item.amount, "transaction.amount"),
     merchant,
     category,
+    pocketId,
+    pocketName,
     type,
     source: source(item.source, "transaction.source"),
     transactionDate: timestamp(item.transactionDate, "transaction.transactionDate"),
@@ -188,7 +223,7 @@ export function parseTransactionPageData(value: unknown): TransactionPageData {
 }
 
 export function parseTransactionEditForm(formData: FormData): ParsedTransactionEdit {
-  const errors: Partial<Record<"amount" | "merchant" | "category", string>> = {};
+  const errors: Partial<Record<TransactionEditField, string>> = {};
   const transactionId = singleFormString(formData, "transactionId")?.trim();
   const expectedUpdatedAt = singleFormString(formData, "expectedUpdatedAt")?.trim();
   const typeValue = singleFormString(formData, "type")?.trim();
@@ -216,6 +251,7 @@ export function parseTransactionEditForm(formData: FormData): ParsedTransactionE
     errors,
     type ?? "expense"
   );
+  const pocketId = editPocket(singleFormString(formData, "pocketId"), errors);
 
   if (
     !transactionId
@@ -234,7 +270,8 @@ export function parseTransactionEditForm(formData: FormData): ParsedTransactionE
         expectedUpdatedAt: timestamp(expectedUpdatedAt, "expectedUpdatedAt"),
         amount,
         merchant,
-        category
+        category,
+        pocketId
       }
     };
   } catch {

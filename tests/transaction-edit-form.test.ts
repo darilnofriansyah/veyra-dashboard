@@ -16,18 +16,20 @@ test("detects material edits using server-compatible normalization", () => {
   const transaction = {
     amount: 25_000,
     merchant: "TUKU",
-    category: "Dining"
+    category: "Dining",
+    pocketId: "42"
   };
 
-  assert.equal(transactionEditIsDirty(transaction, "25000", " TUKU ", "Dining"), false);
-  assert.equal(transactionEditIsDirty(transaction, "30000", "TUKU", "Dining"), true);
-  assert.equal(transactionEditIsDirty(transaction, "25000", "Tuku Kemang", "Dining"), true);
-  assert.equal(transactionEditIsDirty(transaction, "25000", "TUKU", "Coffee"), true);
-  assert.equal(transactionEditIsDirty(transaction, "1e3", "TUKU", "Dining"), true);
+  assert.equal(transactionEditIsDirty(transaction, "25000", " TUKU ", "Dining", "42"), false);
+  assert.equal(transactionEditIsDirty(transaction, "30000", "TUKU", "Dining", "42"), true);
+  assert.equal(transactionEditIsDirty(transaction, "25000", "Tuku Kemang", "Dining", "42"), true);
+  assert.equal(transactionEditIsDirty(transaction, "25000", "TUKU", "Coffee", "42"), true);
+  assert.equal(transactionEditIsDirty(transaction, "25000", "TUKU", "Dining", ""), true);
+  assert.equal(transactionEditIsDirty(transaction, "1e3", "TUKU", "Dining", "42"), true);
 });
 
 test("treats blank and null income metadata as unchanged", () => {
-  const transaction = { amount: 1_000_000, merchant: null, category: null };
+  const transaction = { amount: 1_000_000, merchant: null, category: null, pocketId: null };
 
-  assert.equal(transactionEditIsDirty(transaction, "1000000", "  ", ""), false);
+  assert.equal(transactionEditIsDirty(transaction, "1000000", "  ", "", ""), false);
 });

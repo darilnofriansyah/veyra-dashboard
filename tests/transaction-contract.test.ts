@@ -11,6 +11,8 @@ const expense = {
   amount: 25_000,
   merchant: "TUKU",
   category: "Dining",
+  pocketId: "42",
+  pocketName: "Daily spending",
   type: "expense",
   source: "email",
   transactionDate: "2026-08-13T03:00:00.123456Z",
@@ -23,6 +25,8 @@ const income = {
   amount: 1_000_000,
   merchant: null,
   category: null,
+  pocketId: null,
+  pocketName: null,
   type: "income",
   source: "manual",
   transactionDate: "2026-08-12T03:00:00.000Z",
@@ -72,6 +76,7 @@ test("parses an expense edit into a positive whole-rupiah input", () => {
   form.set("amount", "30000");
   form.set("merchant", " Tuku Kemang ");
   form.set("category", " Dining ");
+  form.set("pocketId", "");
 
   assert.deepEqual(parseTransactionEditForm(form), {
     ok: true,
@@ -80,7 +85,8 @@ test("parses an expense edit into a positive whole-rupiah input", () => {
       expectedUpdatedAt: "2026-08-13T03:01:00.000Z",
       amount: 30000,
       merchant: "Tuku Kemang",
-      category: "Dining"
+      category: "Dining",
+      pocketId: null
     }
   });
 });
@@ -137,7 +143,8 @@ test("normalizes blank income edit metadata to null", () => {
       expectedUpdatedAt: "2026-08-13T03:01:00.000Z",
       amount: 30_000,
       merchant: null,
-      category: null
+      category: null,
+      pocketId: null
     }
   });
 });
@@ -156,6 +163,29 @@ test("rejects duplicate or file-valued income metadata", () => {
     assert.equal(parsed.ok, false);
     if (!parsed.ok) assert.ok(parsed.state.fieldErrors.merchant);
   }
+});
+
+test("parses an optional pocket edit and rejects malformed values", () => {
+  const form = validEditForm();
+  form.set("pocketId", " 42 ");
+
+  assert.deepEqual(parseTransactionEditForm(form), {
+    ok: true,
+    value: {
+      transactionId: "123",
+      expectedUpdatedAt: "2026-08-13T03:01:00.000Z",
+      amount: 30_000,
+      merchant: "Tuku Kemang",
+      category: "Dining",
+      pocketId: "42"
+    }
+  });
+
+  const invalid = validEditForm();
+  invalid.set("pocketId", "pocket-42");
+  const parsed = parseTransactionEditForm(invalid);
+  assert.equal(parsed.ok, false);
+  if (!parsed.ok) assert.equal(parsed.state.fieldErrors.pocketId, "Select a valid pocket.");
 });
 
 test("rejects a file-valued transaction ID", () => {
@@ -204,5 +234,6 @@ function validEditForm(): FormData {
   form.set("amount", "30000");
   form.set("merchant", "Tuku Kemang");
   form.set("category", "Dining");
+  form.set("pocketId", "");
   return form;
 }

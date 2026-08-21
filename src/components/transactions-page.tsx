@@ -6,7 +6,7 @@ import { useCallback, useRef, useState, type FormEvent } from "react";
 import { AppShell } from "@/components/app-shell";
 import { TransactionEditDialog } from "@/components/transaction-edit-dialog";
 import { formatIdr } from "@/lib/finance";
-import type { Transaction, TransactionPageData } from "@/lib/transaction-contract";
+import type { Pocket, Transaction, TransactionPageData } from "@/lib/transaction-contract";
 import {
   transactionHref,
   type TransactionFilters
@@ -16,6 +16,8 @@ import { transactionResultAnnouncementModel } from "@/lib/transaction-result-ann
 
 interface TransactionsPageProps {
   result: LoadTransactionsResult;
+  pockets: Pocket[];
+  pocketsUnavailable: boolean;
   filters: TransactionFilters;
   viewerName: string | null;
 }
@@ -252,7 +254,7 @@ function TransactionTable({
   </>;
 }
 
-export function TransactionsPage({ result, filters, viewerName }: TransactionsPageProps) {
+export function TransactionsPage({ result, pockets, pocketsUnavailable, filters, viewerName }: TransactionsPageProps) {
   const router = useRouter();
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [saveAnnouncement, setSaveAnnouncement] = useState("");
@@ -356,6 +358,8 @@ export function TransactionsPage({ result, filters, viewerName }: TransactionsPa
         <TransactionEditDialog
           key={selectedTransaction.id}
           transaction={selectedTransaction}
+          pockets={pockets}
+          pocketsUnavailable={pocketsUnavailable}
           onClose={closeEditor}
           onSaved={announceSaved}
         />

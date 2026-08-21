@@ -227,7 +227,9 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.match(page, /function jakartaToday\(\)/);
   assert.match(page, /timeZone:\s*"Asia\/Jakarta"/);
   assert.match(page, /parseTransactionFilters\(await searchParams\)/);
-  assert.match(page, /await loadTransactions\(\{/);
+  assert.match(page, /Promise\.all\(\[\s*loadTransactions\(\{/s);
+  assert.match(page, /loadPockets\(session\.telegramUserId\)/);
+  assert.match(page, /pockets=\{pocketResult\.pockets\}/);
   assert.match(page, /telegramUserId:\s*session\.telegramUserId/);
   assert.match(page, /asOfDate:\s*jakartaToday\(\)/);
   assert.match(page, /title:\s*"Transactions"/);
@@ -307,12 +309,16 @@ test("edits a selected transaction in an accessible native side panel", async ()
   for (const name of ["transactionId", "expectedUpdatedAt", "type"]) {
     assert.match(dialog, new RegExp(`type="hidden" name="${name}"`));
   }
-  for (const field of ["amount", "merchant", "category"]) {
+  for (const field of ["amount", "merchant", "category", "pocketId"]) {
     assert.match(dialog, new RegExp(`name="${field}"`));
   }
   assert.match(dialog, /htmlFor=\{amountId\}/);
   assert.match(dialog, /htmlFor=\{merchantId\}/);
   assert.match(dialog, /htmlFor=\{categoryId\}/);
+  assert.match(dialog, /htmlFor=\{pocketId\}/);
+  assert.match(dialog, /<select[^>]*name="pocketId"/);
+  assert.match(dialog, />No pocket<\/option>/);
+  assert.match(dialog, /pocketsUnavailable && <input type="hidden" name="pocketId" value=\{selectedPocketId\}/);
   assert.match(dialog, /aria-describedby=\{/);
   assert.match(dialog, /aria-invalid=\{/);
   assert.match(dialog, /disabled=\{pending\}/);
@@ -339,6 +345,8 @@ test("edits a selected transaction in an accessible native side panel", async ()
   assert.match(dialog, /onChange=\{\(event\) => setMerchant\(event\.target\.value\)\}/);
   assert.match(dialog, /value=\{category\}/);
   assert.match(dialog, /onChange=\{\(event\) => setCategory\(event\.target\.value\)\}/);
+  assert.match(dialog, /value=\{selectedPocketId\}/);
+  assert.match(dialog, /onChange=\{\(event\) => setPocketId\(event\.target\.value\)\}/);
   assert.match(dialog, /transactionDate\.format\(new Date\(transaction\.transactionDate\)\)/);
   assert.match(dialog, /transaction\.type/);
   assert.match(dialog, /transaction\.source/);
