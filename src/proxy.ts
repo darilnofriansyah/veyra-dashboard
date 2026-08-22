@@ -11,7 +11,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  if ((path === "/dashboard" || path === "/transactions") && !signedIn) {
+  if ((path === "/dashboard" || path === "/transactions" || path === "/pockets") && !signedIn) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
@@ -19,5 +19,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/dashboard", "/transactions"]
+  matcher: ["/", "/dashboard", "/transactions", "/pockets"]
 };

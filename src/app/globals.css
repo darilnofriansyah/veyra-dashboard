@@ -14,6 +14,13 @@
   --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+:root {
+  --veyra-telegram-viewport-height: 100dvh;
+  --veyra-telegram-stable-height: 100dvh;
+  --veyra-telegram-safe-top: env(safe-area-inset-top, 0px);
+  --veyra-telegram-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 @layer base {
   * { box-sizing: border-box; }
   body { margin: 0; min-width: 320px; background: #f6f8fb; color: var(--color-veyra-ink); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
@@ -63,4 +70,73 @@
 
 @media (prefers-reduced-motion: reduce) {
   .transaction-edit-dialog { transition: none; }
+}
+
+html[data-telegram-mini-app="true"] body {
+  min-height: var(--veyra-telegram-stable-height);
+  padding-top: var(--veyra-telegram-safe-top);
+}
+
+@media (max-width: 640px) {
+  html[data-telegram-mini-app="true"] .app-shell {
+    min-height: var(--veyra-telegram-stable-height);
+    padding-bottom: calc(4.25rem + var(--veyra-telegram-safe-bottom));
+  }
+
+  html[data-telegram-mini-app="true"] .app-sidebar {
+    position: fixed;
+    z-index: 40;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: block;
+    padding: 0.375rem 0.5rem var(--veyra-telegram-safe-bottom);
+    border-top: 1px solid var(--color-veyra-line);
+    border-bottom: 0;
+    background: white;
+  }
+
+  html[data-telegram-mini-app="true"] .app-brand,
+  html[data-telegram-mini-app="true"] .app-account {
+    display: none;
+  }
+
+  html[data-telegram-mini-app="true"] .app-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    gap: 0.25rem;
+  }
+
+  html[data-telegram-mini-app="true"] .app-nav a {
+    min-height: 3.5rem;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding: 0.375rem 0.25rem;
+    border-left-width: 0;
+    border-bottom: 3px solid transparent;
+  }
+
+  html[data-telegram-mini-app="true"] .app-nav a[aria-current="page"] {
+    border-bottom-color: var(--color-veyra-cyan);
+  }
+
+  html[data-telegram-mini-app="true"] .pocket-dialog,
+  html[data-telegram-mini-app="true"] .transaction-edit-dialog {
+    max-height: calc(
+      var(--veyra-telegram-viewport-height)
+      - var(--veyra-telegram-safe-top)
+      - var(--veyra-telegram-safe-bottom)
+      - 1rem
+    );
+  }
+
+  html[data-telegram-mini-app="true"] .pocket-dialog {
+    overflow-y: auto;
+  }
+
+  html[data-telegram-mini-app="true"] .pocket-dialog form {
+    padding-bottom: calc(1.25rem + var(--veyra-telegram-safe-bottom));
+  }
 }

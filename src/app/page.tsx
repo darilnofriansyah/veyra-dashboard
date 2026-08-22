@@ -25,7 +25,7 @@ export default async function LoginPage({
     : null;
 
   return (
-    <main className="relative min-h-dvh overflow-hidden bg-white p-4 text-veyra-ink sm:p-6">
+    <main id="login-page" className="relative min-h-dvh overflow-hidden bg-white p-4 text-veyra-ink sm:p-6">
       <Image
         src="/assets/veyra-logo.png"
         width={840}

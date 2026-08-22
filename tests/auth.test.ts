@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import test from "node:test";
 import {
   createLocalJWKSet,
@@ -12,8 +13,10 @@ import {
   createAuthorizationRequest,
   createSessionToken,
   exchangeTelegramCode,
+  readTelegramBotToken,
   verifyTelegramIdToken,
   verifyFlowToken,
+  verifyTelegramMiniAppInitData,
   verifySessionToken,
   type AuthConfig
 } from "../src/lib/auth.ts";
@@ -26,6 +29,122 @@ const config: AuthConfig = {
   coreUrl: "http://core-api:3000",
   coreApiKey: "core-api-key"
 };
+
+const botToken = "123456789:test-bot-token";
+
+function miniAppInitData(
+  overrides: Record<string, string> = {},
+  token = botToken
+) {
+  const values = new URLSearchParams({
+    auth_date: "1787335200",
+    query_id: "AAHdF6IQAAAAAN0XohDhrOrc",
+    user: JSON.stringify({
+      id: 976684739,
+      first_name: "Kaito",
+      last_name: "Ren",
+      username: "kaito"
+    }),
+    ...overrides
+  });
+  const check = [...values.entries()]
+    .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
+  const secret = createHmac("sha256", "WebAppData")
+    .update(token)
+    .digest();
+  values.set(
+    "hash",
+    createHmac("sha256", secret).update(check).digest("hex")
+  );
+  return values.toString();
+}
+
+test("verifies fresh Telegram Mini App initialization data", () => {
+  assert.deepEqual(
+    verifyTelegramMiniAppInitData(
+      miniAppInitData(),
+      botToken,
+      1787335200
+    ),
+    { telegramUserId: "976684739", name: "Kaito Ren" }
+  );
+});
+
+test("reads the required Telegram bot token", () => {
+  assert.equal(
+    readTelegramBotToken({ TELEGRAM_BOT_TOKEN: " token " }),
+    "token"
+  );
+  assert.throws(
+    () => readTelegramBotToken({ TELEGRAM_BOT_TOKEN: " " }),
+    /TELEGRAM_BOT_TOKEN is required/
+  );
+  assert.throws(
+    () => readTelegramBotToken({}),
+    /TELEGRAM_BOT_TOKEN is required/
+  );
+});
+
+test("rejects unsafe Telegram Mini App initialization data", () => {
+  const now = 1787335200;
+  const valid = miniAppInitData();
+  const cases = [
+    valid.replace("Kaito", "Attacker"),
+    miniAppInitData({ auth_date: String(now - 301) }),
+    miniAppInitData({ auth_date: String(now + 31) }),
+    miniAppInitData({ auth_date: "not-a-date" }),
+    miniAppInitData({ user: "not-json" }),
+    miniAppInitData({ user: JSON.stringify({ id: 0, first_name: "Kaito" }) }),
+    miniAppInitData({ user: JSON.stringify({ id: 9007199254740992 }) }),
+    miniAppInitData().replace("user=", "user=x&user="),
+    `${miniAppInitData()}&hash=${"0".repeat(64)}`,
+    "x".repeat(16_385)
+  ];
+
+  for (const initData of cases) {
+    assert.throws(() =>
+      verifyTelegramMiniAppInitData(initData, botToken, now)
+    );
+  }
+});
+
+test("rejects malformed raw percent escapes", () => {
+  const signed = miniAppInitData({
+    user: JSON.stringify({
+      id: 976684739,
+      first_name: "Kaito",
+      username: "ka%ito"
+    })
+  });
+  const malformed = signed.replace("%25", "%");
+
+  assert.throws(() =>
+    verifyTelegramMiniAppInitData(malformed, botToken, 1787335200)
+  );
+});
+
+test("accepts Telegram users with minimal or absent names", () => {
+  assert.deepEqual(
+    verifyTelegramMiniAppInitData(
+      miniAppInitData({
+        user: JSON.stringify({ id: 976684739, first_name: "Kaito" })
+      }),
+      botToken,
+      1787335200
+    ),
+    { telegramUserId: "976684739", name: "Kaito" }
+  );
+  assert.deepEqual(
+    verifyTelegramMiniAppInitData(
+      miniAppInitData({ user: JSON.stringify({ id: 976684739 }) }),
+      botToken,
+      1787335200
+    ),
+    { telegramUserId: "976684739", name: null }
+  );
+});
 
 test("builds the registered Telegram authorization request with PKCE", async () => {
   const { url, flowToken } = await createAuthorizationRequest(config, {

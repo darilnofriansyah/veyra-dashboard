@@ -37,11 +37,11 @@ export function AppShell({
     .toUpperCase();
 
   return (
-    <div className="min-h-dvh bg-[#f6f8fb] text-veyra-ink xl:grid xl:grid-cols-[216px_1fr]">
+    <div className="app-shell min-h-dvh bg-[#f6f8fb] text-veyra-ink xl:grid xl:grid-cols-[216px_1fr]">
       <a href={`#${mainId}`} className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-veyra-navy focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-white">{skipLabel}</a>
-      <aside className="flex flex-wrap items-center gap-4 border-b border-veyra-line bg-white p-4 xl:block xl:min-h-dvh xl:border-b-0 xl:border-r xl:p-6">
-        <Image src="/assets/veyra-logo.png" width={840} height={194} sizes="124px" alt="Veyra" className="h-auto w-[124px]" preload />
-        <nav aria-label="Primary" className="order-2 grid basis-full gap-1 xl:mt-8">
+      <aside className="app-sidebar flex flex-wrap items-center gap-4 border-b border-veyra-line bg-white p-4 xl:block xl:min-h-dvh xl:border-b-0 xl:border-r xl:p-6">
+        <Image src="/assets/veyra-logo.png" width={840} height={194} sizes="124px" alt="Veyra" className="app-brand h-auto w-[124px]" preload />
+        <nav aria-label="Primary" className="app-nav order-2 grid basis-full gap-1 xl:mt-8">
           <Link
             href="/dashboard"
             aria-current={activePage === "overview" ? "page" : undefined}
@@ -67,7 +67,7 @@ export function AppShell({
             Pockets
           </Link>
         </nav>
-        <section aria-label="Current account" className="order-1 ml-auto flex min-w-0 items-center gap-3 xl:fixed xl:bottom-6 xl:left-6 xl:ml-0 xl:w-[168px]">
+        <section aria-label="Current account" className="app-account order-1 ml-auto flex min-w-0 items-center gap-3 xl:fixed xl:bottom-6 xl:left-6 xl:ml-0 xl:w-[168px]">
           <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-full bg-veyra-navy text-xs font-semibold text-white">{initials}</span>
           <div className="min-w-0 flex-1">
             <strong className="block min-w-0 break-words text-sm">{accountName}</strong>

@@ -85,7 +85,7 @@ export function PocketDialog({ mode, pocket, onClose, onSaved }: PocketDialogPro
         event.preventDefault();
         if (!pending) event.currentTarget.close();
       }}
-      className="w-[min(100%-2rem,32rem)] rounded-veyra border border-veyra-line bg-white p-0 text-veyra-ink shadow-xl"
+      className="pocket-dialog w-[min(100%-2rem,32rem)] rounded-veyra border border-veyra-line bg-white p-0 text-veyra-ink shadow-xl"
     >
       <form action={action} className="p-5">
         {mode !== "create" && <input type="hidden" name="pocketId" value={pocket?.id} />}

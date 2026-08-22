@@ -1,5 +1,6 @@
 import {
   createHash,
+  createHmac,
   randomBytes,
   timingSafeEqual
 } from "node:crypto";
@@ -101,6 +102,85 @@ function equal(left: string, right: string) {
   const rightBytes = Buffer.from(right);
   return leftBytes.length === rightBytes.length
     && timingSafeEqual(leftBytes, rightBytes);
+}
+
+export function readTelegramBotToken(
+  environment: { TELEGRAM_BOT_TOKEN?: string; [key: string]: string | undefined } = process.env
+) {
+  return required(environment.TELEGRAM_BOT_TOKEN, "TELEGRAM_BOT_TOKEN");
+}
+
+export function verifyTelegramMiniAppInitData(
+  initData: string,
+  botToken = readTelegramBotToken(),
+  nowSeconds = Math.floor(Date.now() / 1000)
+): TelegramIdentity {
+  if (!initData || initData.length > 16_384) {
+    throw new Error("Invalid Telegram Mini App data");
+  }
+  if (/%(?![a-f\d]{2})/i.test(initData)) {
+    throw new Error("Invalid Telegram Mini App data");
+  }
+
+  const entries = [...new URLSearchParams(initData).entries()];
+  const keys = new Set<string>();
+  for (const [key] of entries) {
+    if (!key || keys.has(key)) throw new Error("Invalid Telegram Mini App data");
+    keys.add(key);
+  }
+
+  const hash = entries.find(([key]) => key === "hash")?.[1];
+  if (!hash || !/^[a-f\d]{64}$/i.test(hash)) {
+    throw new Error("Invalid Telegram Mini App data");
+  }
+
+  const check = entries
+    .filter(([key]) => key !== "hash")
+    .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
+  const secretKey = createHmac("sha256", "WebAppData")
+    .update(botToken)
+    .digest();
+  const expectedHash = createHmac("sha256", secretKey)
+    .update(check)
+    .digest("hex");
+  if (!equal(expectedHash, hash.toLowerCase())) {
+    throw new Error("Invalid Telegram Mini App data");
+  }
+
+  const authDateText = entries.find(([key]) => key === "auth_date")?.[1] ?? "";
+  const authDate = Number(authDateText);
+  if (
+    !/^\d+$/.test(authDateText)
+    || !Number.isSafeInteger(authDate)
+    || authDate > nowSeconds + 30
+    || nowSeconds - authDate > 300
+  ) {
+    throw new Error("Invalid Telegram Mini App data");
+  }
+
+  const userText = entries.find(([key]) => key === "user")?.[1];
+  let user: Record<string, unknown>;
+  try {
+    user = JSON.parse(userText ?? "") as Record<string, unknown>;
+  } catch {
+    throw new Error("Invalid Telegram Mini App data");
+  }
+  if (!user || typeof user !== "object" || Array.isArray(user)) {
+    throw new Error("Invalid Telegram Mini App data");
+  }
+  const id = user.id;
+  if (typeof id !== "number" || !Number.isSafeInteger(id) || id <= 0) {
+    throw new Error("Invalid Telegram Mini App data");
+  }
+
+  const name = [user.first_name, user.last_name]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .trim()
+    .slice(0, 100) || null;
+  return { telegramUserId: String(id), name };
 }
 
 export async function createAuthorizationRequest(

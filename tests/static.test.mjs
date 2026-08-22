@@ -522,6 +522,7 @@ test("documents and supplies the production auth environment", async () => {
     "APP_URL",
     "TELEGRAM_CLIENT_ID",
     "TELEGRAM_CLIENT_SECRET",
+    "TELEGRAM_BOT_TOKEN",
     "AUTH_SECRET",
     "NEXUS_CORE_URL",
     "CORE_API_KEY"
@@ -536,4 +537,16 @@ test("documents and supplies the production auth environment", async () => {
   assert.match(deploy, /docker compose --env-file \/home\/unmeii\/apps\/\.env/);
   assert.doesNotMatch(`${example}\n${compose}`, /VEYRA_TELEGRAM_USER_ID|VEYRA_USER_ID/);
   assert.doesNotMatch(example, /NEXT_PUBLIC_/);
+
+  const clientSources = await Promise.all([
+    "src/components/telegram-mini-app.tsx",
+    "src/components/app-shell.tsx",
+    "src/components/overview-dashboard.tsx",
+    "src/components/transactions-page.tsx",
+    "src/components/pockets-page.tsx"
+  ].map(readSource));
+  assert.doesNotMatch(
+    clientSources.join("\n"),
+    /TELEGRAM_BOT_TOKEN|NEXT_PUBLIC_TELEGRAM/
+  );
 });

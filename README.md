@@ -43,6 +43,7 @@ Veyra supports these project-specific variables:
 | `APP_URL` | Required | Public application origin used to build redirects and the Telegram callback. It must be a valid HTTPS URL; only its origin is used. |
 | `TELEGRAM_CLIENT_ID` | Required | Telegram OIDC client ID. It must be a positive integer. |
 | `TELEGRAM_CLIENT_SECRET` | Required | Server-only Telegram OIDC client secret used during the authorization-code exchange. |
+| `TELEGRAM_BOT_TOKEN` | Required for Mini App login | Server-only token for the bot configured to launch Veyra as a Mini App. |
 | `AUTH_SECRET` | Required | Server-only key used to sign the OIDC flow and session JWTs. It must contain at least 32 characters. |
 | `NEXUS_CORE_URL` | Optional | Base URL for Core. It defaults to `http://core-api:3000`; set it when Core is not reachable at that Docker-network address. Trailing slashes are removed. |
 | `CORE_API_KEY` | Optional for Veyra; may be required by Core | When non-empty, Veyra sends it to Core as the server-only `x-core-api-key` header. |
@@ -201,6 +202,8 @@ for the complete behavior and contract.
 
 ## Telegram authentication
 
+### Browser OIDC fallback
+
 1. The login page links to `GET /auth/telegram`.
 2. Veyra creates state, nonce, and PKCE values, stores them in a signed,
    HTTP-only, SameSite=Lax flow cookie for ten minutes, and redirects to
@@ -218,6 +221,30 @@ for the complete behavior and contract.
    verifies the session again before passing the Telegram ID to Core.
 6. Sign out runs the server action in `src/app/actions.ts`, deletes the session
    cookie, and redirects to `/`.
+
+### Telegram Mini App
+
+Telegram must launch the exact HTTPS root URL `<APP_URL origin>/`. The layout
+loads Telegram's official Web Apps script at
+`https://telegram.org/js/telegram-web-app.js?63`. The Mini App posts the raw
+`Telegram.WebApp.initData` body same-origin to
+`POST /auth/telegram/mini-app`; the server validates it with
+`TELEGRAM_BOT_TOKEN`, rejects data older than five minutes, and asks Core to
+authorize the verified Telegram identity. On success it sets the existing
+HTTP-only Veyra session cookie and navigates to `/dashboard`. Invalid, denied,
+or unavailable launches do not create a session and show a truthful retry or
+access state.
+
+Maintainer checklist:
+
+1. Configure the same bot represented by `TELEGRAM_BOT_TOKEN`.
+2. Set its menu/main Mini App URL to the exact `<APP_URL origin>/` over HTTPS.
+3. Keep the OIDC callback at `<APP_URL origin>/auth/telegram/callback`.
+4. Verify Android, iOS, and Desktop before declaring rollout complete.
+
+BotFather configuration, deployment, and real Telegram client verification are
+external maintainer work; repository changes do not claim that they were
+performed.
 
 Session and flow cookies are marked `Secure` when `NODE_ENV` is `production`.
 Telegram credentials, Core credentials, flow values, and session tokens must
