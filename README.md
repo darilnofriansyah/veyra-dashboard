@@ -186,6 +186,19 @@ or statement balance.
 Deploy the Core transaction query and PATCH endpoints before deploying this
 Veyra page. Veyra validates both endpoint responses before rendering them.
 
+### Pockets and monthly budgets
+
+The protected [`/pockets`](src/app/pockets/page.tsx) page uses the signed
+Telegram session identity for server-side Core calls. It lists pockets with
+`POST /api/veyra/budgets/pockets/list`, creates or updates monthly budgets with
+`POST /api/veyra/budgets/upsert`, renames with
+`POST /api/veyra/budgets/pockets/rename`, and changes the default with
+`POST /api/veyra/budgets/pockets/default`. Creation and budget updates accept
+positive whole-IDR amounts. Delete/archive and removing a budget by setting it
+to null are not available. See the
+[`Pocket management design spec`](docs/superpowers/specs/2026-08-22-veyra-pocket-management-design.md)
+for the complete behavior and contract.
+
 ## Telegram authentication
 
 1. The login page links to `GET /auth/telegram`.
@@ -199,9 +212,10 @@ Veyra page. Veyra validates both endpoint responses before rendering them.
    creates a signed, HTTP-only session JWT with a 12-hour token lifetime and
    redirects to `/dashboard`. Core `404` becomes `access_denied`; other failures
    return the generic `telegram_login` error and create no session.
-5. The route guard redirects signed-in users from `/` to `/dashboard` and
-   unsigned users in the opposite direction. The dashboard verifies the
-   session again before passing the Telegram ID to Core.
+5. The route guard protects authenticated pages including `/dashboard`,
+   `/transactions`, and `/pockets`; it redirects signed-in users from `/` to
+   `/dashboard` and unsigned users in the opposite direction. Each page
+   verifies the session again before passing the Telegram ID to Core.
 6. Sign out runs the server action in `src/app/actions.ts`, deletes the session
    cookie, and redirects to `/`.
 

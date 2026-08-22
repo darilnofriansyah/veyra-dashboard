@@ -30,12 +30,7 @@ export interface TransactionEditInput {
   pocketId: string | null;
 }
 
-export interface Pocket {
-  id: string;
-  name: string;
-  amount: number | null;
-  isDefault: boolean;
-}
+export type { Pocket } from "@/lib/pocket-contract";
 
 type TransactionEditField = "amount" | "merchant" | "category" | "pocketId";
 

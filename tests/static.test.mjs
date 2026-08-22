@@ -384,6 +384,93 @@ test("edits transactions through an independently authenticated server action", 
   assert.doesNotMatch(actions, /redirect\(/);
 });
 
+test("manages pockets through independently authenticated server actions", async () => {
+  const actions = await readSource("src/app/pockets/actions.ts");
+
+  assert.match(actions, /^"use server"/);
+  assert.match(actions, /verifySessionToken/);
+  assert.match(actions, /\(await cookies\(\)\)\.get\(SESSION_COOKIE\)\?\.value/);
+  for (const parser of ["parseCreatePocketForm", "parseRenamePocketForm", "parsePocketBudgetForm", "parseDefaultPocketForm"]) {
+    assert.match(actions, new RegExp(`${parser}\\(formData\\)`));
+  }
+  assert.match(actions, /return session\?\.telegramUserId \?\? null/);
+  assert.match(actions, /createPocket\(userId,/);
+  assert.match(actions, /renamePocket\(userId, parsed\.value\.pocketId, parsed\.value\.name\)/);
+  assert.match(actions, /loadPockets\(userId\)/);
+  assert.match(actions, /updatePocketBudget\(userId, pocket\.name, parsed\.value\.amount\)/);
+  assert.match(actions, /setDefaultPocket\(userId, parsed\.value\.pocketId\)/);
+  assert.match(actions, /revalidatePath\("\/pockets"\);[\s\S]*revalidatePath\("\/transactions"\);[\s\S]*revalidatePath\("\/dashboard"\);/);
+  assert.match(actions, /Promise<PocketActionState>/);
+  assert.doesNotMatch(actions, /formData\.(?:get|getAll)\(["'](?:telegramUserId|userId)["']/);
+  assert.doesNotMatch(actions, /redirect\(/);
+});
+
+test("renders protected pocket management with truthful loading and navigation", async () => {
+  const [page, loading, shell] = await Promise.all([
+    readSource("src/app/pockets/page.tsx"),
+    readSource("src/app/pockets/loading.tsx"),
+    readSource("src/components/app-shell.tsx")
+  ]);
+
+  assert.match(page, /await connection\(\)/);
+  assert.match(page, /verifySessionToken/);
+  assert.match(page, /if \(!session\) redirect\("\/"\)/);
+  assert.match(page, /loadPockets\(session\.telegramUserId\)/);
+  assert.match(page, /<PocketsPage result=\{result\} viewerName=\{session\.name\}/);
+  assert.match(page, /title:\s*"Pockets"/);
+  assert.match(page, /description:\s*"Manage your Veyra pockets and monthly budgets"/);
+
+  assert.match(loading, /role="status" aria-live="polite"/);
+  assert.match(loading, />Loading pockets…<\/span>/);
+  assert.match(loading, /animate-pulse/);
+  assert.doesNotMatch(loading, /IDR\s*[0-9]/);
+
+  const pocketsLinkStart = shell.indexOf('<Link\n            href="/pockets"');
+  const pocketsLinkEnd = shell.indexOf("</Link>", pocketsLinkStart);
+  const pocketsLink = shell.slice(pocketsLinkStart, pocketsLinkEnd);
+  assert.ok(pocketsLinkStart >= 0 && pocketsLinkEnd > pocketsLinkStart);
+  assert.match(shell, /Wallet/);
+  assert.match(shell, /type ActivePage = "overview" \| "transactions" \| "pockets"/);
+  assert.match(pocketsLink, /\bPockets\b/);
+  assert.match(pocketsLink, /aria-current=\{activePage === "pockets" \? "page" : undefined\}/);
+  assert.match(pocketsLink, /className=\{activePage === "pockets" \? activeLink : inactiveLink\}/);
+});
+
+test("offers accessible pocket dialogs and truthful pocket states", async () => {
+  const [view, dialog] = await Promise.all([
+    readSource("src/components/pockets-page.tsx"),
+    readSource("src/components/pocket-dialog.tsx")
+  ]);
+
+  assert.match(view, /^"use client"/);
+  assert.match(view, /activePage="pockets"/);
+  assert.match(view, /formatIdr\(pocket\.amount\)/);
+  assert.match(view, /No budget set/);
+  assert.match(view, /Default/);
+  for (const label of ["Add pocket", "Rename", "Set budget", "Make default"]) {
+    assert.match(view, new RegExp(label));
+  }
+  assert.match(view, /Pockets couldn’t be loaded/);
+  assert.match(view, />Retry<\/button>/);
+  assert.match(view, /No pockets yet/);
+  assert.match(view, /role="status" aria-live="polite"/);
+  assert.match(view, /returnFocusRef\.current\?\.focus\(\)/);
+  assert.doesNotMatch(view, /Delete|Archive/);
+
+  assert.match(dialog, /^"use client"/);
+  assert.match(dialog, /<dialog/);
+  assert.match(dialog, /\.showModal\(\)/);
+  assert.match(dialog, /useActionState\(/);
+  assert.match(dialog, /aria-labelledby=\{titleId\}/);
+  assert.match(dialog, /aria-describedby=\{/);
+  assert.match(dialog, /aria-invalid=\{/);
+  assert.match(dialog, /disabled=\{pending\}/);
+  assert.match(dialog, /state\.status === "success"/);
+  assert.match(dialog, /dialogRef\.current\?\.close\(\)/);
+  assert.match(dialog, /onSaved\(\)/);
+  assert.doesNotMatch(dialog, /Delete|Archive|null-budget/);
+});
+
 test("keeps transaction loading stable and documents correction boundary", async () => {
   const [loading, readme, backlog] = await Promise.all([
     readSource("src/app/transactions/loading.tsx"),

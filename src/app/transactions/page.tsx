@@ -4,8 +4,9 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { TransactionsPage } from "@/components/transactions-page";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
+import { loadPockets } from "@/lib/pockets-api";
 import { parseTransactionFilters } from "@/lib/transaction-filters";
-import { loadPockets, loadTransactions } from "@/lib/transactions-api";
+import { loadTransactions } from "@/lib/transactions-api";
 
 export const metadata: Metadata = {
   title: "Transactions",

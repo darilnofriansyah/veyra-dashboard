@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  loadPockets,
   loadTransactions,
   updateTransaction
 } from "../src/lib/transactions-api.ts";
@@ -33,11 +32,6 @@ const validInput = {
   merchant: "Tuku Kemang",
   category: "Dining",
   pocketId: "42"
-};
-
-const validPockets = {
-  status: "ok",
-  pockets: [{ id: "42", name: "Daily spending", amount: 500_000, isDefault: true }]
 };
 
 const environment = process.env as Record<string, string | undefined>;
@@ -154,21 +148,6 @@ test("omits inactive transaction query filters", async () => {
       timezone: "Asia/Jakarta",
       limit: 50
     });
-  });
-});
-
-test("accepts the pocket-list endpoint's created response", async () => {
-  await withEnvironment({ NEXUS_CORE_URL: undefined, CORE_API_KEY: undefined }, async () => {
-    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
-    const result = await loadPockets("976684739", async (input, init) => {
-      calls.push({ input, init });
-      return Response.json(validPockets, { status: 201 });
-    });
-
-    assert.deepEqual(result, { pockets: validPockets.pockets, error: false });
-    assert.equal(String(calls[0]?.input), "http://core-api:3000/api/veyra/budgets/pockets/list");
-    assert.equal(calls[0]?.init?.method, "POST");
-    assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), { userId: "976684739" });
   });
 });
 

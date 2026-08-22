@@ -1,12 +1,12 @@
 "use client";
 
-import { House, Receipt } from "@phosphor-icons/react";
+import { House, Receipt, Wallet } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { logout } from "@/app/actions";
 
-type ActivePage = "overview" | "transactions";
+type ActivePage = "overview" | "transactions" | "pockets";
 
 interface AppShellProps {
   activePage: ActivePage;
@@ -57,6 +57,14 @@ export function AppShell({
           >
             <Receipt size={16} weight="duotone" aria-hidden="true" />
             Transactions
+          </Link>
+          <Link
+            href="/pockets"
+            aria-current={activePage === "pockets" ? "page" : undefined}
+            className={activePage === "pockets" ? activeLink : inactiveLink}
+          >
+            <Wallet size={16} weight="duotone" aria-hidden="true" />
+            Pockets
           </Link>
         </nav>
         <section aria-label="Current account" className="order-1 ml-auto flex min-w-0 items-center gap-3 xl:fixed xl:bottom-6 xl:left-6 xl:ml-0 xl:w-[168px]">

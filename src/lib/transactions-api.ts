@@ -1,7 +1,6 @@
 import {
   parseTransaction,
   parseTransactionPageData,
-  type Pocket,
   type Transaction,
   type TransactionEditInput,
   type TransactionEditState,
@@ -17,11 +16,6 @@ export interface LoadTransactionsInput {
 
 export interface LoadTransactionsResult {
   data: TransactionPageData | null;
-  error: boolean;
-}
-
-export interface LoadPocketsResult {
-  pockets: Pocket[];
   error: boolean;
 }
 
@@ -116,26 +110,7 @@ function requestOptions(method: "POST" | "PATCH", body: JsonBody): RequestInit {
 }
 
 const queryError = (): LoadTransactionsResult => ({ data: null, error: true });
-const pocketsError = (): LoadPocketsResult => ({ pockets: [], error: true });
 const unavailable = (): UpdateTransactionResult => ({ status: "unavailable" });
-
-function parsePockets(value: unknown): Pocket[] {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid pockets");
-  const response = value as Record<string, unknown>;
-  if (response.status !== "ok" || !Array.isArray(response.pockets)) throw new Error("Invalid pockets");
-  return response.pockets.map((value) => {
-    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid pocket");
-    const pocket = value as Record<string, unknown>;
-    const amount = pocket.amount;
-    if (
-      typeof pocket.id !== "string" || !isPositiveId(pocket.id)
-      || typeof pocket.name !== "string" || !pocket.name.trim() || pocket.name.length > 200
-      || (amount !== null && (typeof amount !== "number" || !Number.isSafeInteger(amount) || amount < 0))
-      || typeof pocket.isDefault !== "boolean"
-    ) throw new Error("Invalid pocket");
-    return { id: pocket.id, name: pocket.name, amount, isDefault: pocket.isDefault };
-  });
-}
 
 export async function loadTransactions(
   input: LoadTransactionsInput,
@@ -154,24 +129,6 @@ export async function loadTransactions(
     return { data: parseTransactionPageData(await response.json()), error: false };
   } catch {
     return queryError();
-  }
-}
-
-export async function loadPockets(
-  telegramUserId: string,
-  fetchImpl: FetchImplementation = fetch
-): Promise<LoadPocketsResult> {
-  if (!isPositiveId(telegramUserId)) return pocketsError();
-
-  try {
-    const response = await fetchImpl(
-      `${coreUrl()}/api/veyra/budgets/pockets/list`,
-      requestOptions("POST", { userId: telegramUserId })
-    );
-    if (response.status !== 200 && response.status !== 201) return pocketsError();
-    return { pockets: parsePockets(await response.json()), error: false };
-  } catch {
-    return pocketsError();
   }
 }
 

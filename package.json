@@ -3,7 +3,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test",
+    "test": "node --conditions=react-server --test",
     "assets": "node scripts/optimize-art.mjs"
   },
   "type": "module",
@@ -12,7 +12,8 @@
     "jose": "^6.2.4",
     "next": "16.2.11",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

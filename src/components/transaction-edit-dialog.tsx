@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { editTransaction } from "@/app/transactions/actions";
 import { formatIdr } from "@/lib/finance";
 import { editableAmount, transactionEditIsDirty } from "@/lib/transaction-edit-form";
-import type { Pocket, Transaction, TransactionEditState } from "@/lib/transaction-contract";
+import type { Pocket } from "@/lib/pocket-contract";
+import type { Transaction, TransactionEditState } from "@/lib/transaction-contract";
 
 interface TransactionEditDialogProps {
   transaction: Transaction;
