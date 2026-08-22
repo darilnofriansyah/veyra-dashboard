@@ -130,7 +130,9 @@ test("creates the existing session from valid Mini App data", async () => {
         name: "Kaito Ren"
       });
       assert.match(String(response.headers.get("set-cookie")), /HttpOnly/i);
-      assert.match(String(response.headers.get("set-cookie")), /SameSite=lax/i);
+      assert.match(String(response.headers.get("set-cookie")), /SameSite=none/i);
+      assert.match(String(response.headers.get("set-cookie")), /Secure/i);
+      assert.match(String(response.headers.get("set-cookie")), /Partitioned/i);
       assert.equal(response.headers.get("cache-control"), "no-store");
     } finally {
       globalThis.fetch = originalFetch;
