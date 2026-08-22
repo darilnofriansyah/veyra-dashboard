@@ -39,6 +39,13 @@ test("cleans up Telegram chrome and BackButton handlers", async () => {
   assert.match(bridge, /router\.replace\("\/dashboard"\)/);
 });
 
+test("prevents Telegram vertical swipes from minimizing the app while tables scroll", async () => {
+  const bridge = await readFile("src/components/telegram-mini-app.tsx", "utf8");
+  assert.match(bridge, /disableVerticalSwipes\?\(\): void/);
+  assert.match(bridge, /isVersionAtLeast\?\.\("7\.7"\)/);
+  assert.match(bridge, /webApp\.disableVerticalSwipes\?\.\(\)/);
+});
+
 test("keeps automatic login accessible and inside Telegram", async () => {
   const bridge = await readFile("src/components/telegram-mini-app.tsx", "utf8");
   assert.match(bridge, /role="status"/);
@@ -60,6 +67,13 @@ test("keeps automatic login accessible and inside Telegram", async () => {
   }
   assert.doesNotMatch(bridge, /URLSearchParams\s*\([^)]*initData/);
   assert.doesNotMatch(bridge, /(?:location|href|replace)[^\n;]*initData/);
+});
+
+test("turns a stalled Mini App login into a retryable unavailable state", async () => {
+  const bridge = await readFile("src/components/telegram-mini-app.tsx", "utf8");
+  assert.match(bridge, /window\.setTimeout\(\(\) => controller\.abort\(\), 7_000\)/);
+  assert.match(bridge, /\.catch\(\(\) => \{\s*if \(active\) setAuthState\("unavailable"\);\s*\}\)\.finally/);
+  assert.match(bridge, /window\.clearTimeout\(timeout\)/);
 });
 
 test("restores login interactivity after authentication settles", async () => {

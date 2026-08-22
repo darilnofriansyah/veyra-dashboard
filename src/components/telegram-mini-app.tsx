@@ -30,6 +30,7 @@ interface TelegramWebApp {
   contentSafeAreaInset?: TelegramInset;
   ready(): void;
   expand(): void;
+  disableVerticalSwipes?(): void;
   isVersionAtLeast?(version: string): boolean;
   setHeaderColor?(color: string): void;
   setBackgroundColor?(color: string): void;
@@ -109,6 +110,7 @@ export function TelegramMiniApp() {
     syncChrome();
     webApp.ready();
     webApp.expand();
+    if (webApp.isVersionAtLeast?.("7.7")) webApp.disableVerticalSwipes?.();
     for (const event of events) webApp.onEvent(event, syncChrome);
     window.addEventListener("resize", syncChrome);
     if (secondary) {
@@ -130,6 +132,7 @@ export function TelegramMiniApp() {
     if (!webApp || pathname !== "/") return;
 
     const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 7_000);
     let active = true;
 
     if (!webApp.initData) {
@@ -153,12 +156,13 @@ export function TelegramMiniApp() {
         if (!active) return;
         setAuthState(response.status === 403 ? "denied" : response.status === 503 ? "unavailable" : "expired");
       }).catch(() => {
-        if (active) setAuthState("expired");
-      });
+        if (active) setAuthState("unavailable");
+      }).finally(() => window.clearTimeout(timeout));
     }
 
     return () => {
       active = false;
+      window.clearTimeout(timeout);
       controller.abort();
     };
   }, [pathname, retry]);
