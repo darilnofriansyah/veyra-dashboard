@@ -626,6 +626,41 @@ test("uses divided pockets with compact mobile actions", async () => {
   assert.match(loading, /pocket-list-skeleton/);
 });
 
+test("aligns primary page content and preserves the truthful pocket workspace", async () => {
+  const [overview, transactions, pockets, overviewLoading, transactionsLoading, pocketsLoading] = await Promise.all([
+    readSource("src/components/overview-dashboard.tsx"),
+    readSource("src/components/transactions-page.tsx"),
+    readSource("src/components/pockets-page.tsx"),
+    readSource("src/app/dashboard/loading.tsx"),
+    readSource("src/app/transactions/loading.tsx"),
+    readSource("src/app/pockets/loading.tsx")
+  ]);
+  const wrapper = /mx-auto max-w-\[1280px\][^\"]*xl:px-2 xl:py-1/;
+
+  for (const page of [overview, transactions, pockets]) assert.match(page, wrapper);
+  for (const loading of [overviewLoading, transactionsLoading, pocketsLoading]) assert.match(loading, wrapper);
+
+  assert.match(pockets, /const pocketCountLabel = `\$\{result\.pockets\.length\} \$\{result\.pockets\.length === 1 \? "pocket" : "pockets"\}`;/);
+  assert.match(pockets, /<p className="text-sm font-semibold text-slate-600">\{pocketCountLabel\}<\/p>/);
+  assert.match(pockets, /<h3 className="min-w-0 break-words text-base font-bold text-veyra-ink">\{pocket\.name\}<\/h3>/);
+  const workspace = /lg:grid-cols-\[minmax\(0,1fr\)_minmax\(16rem,20rem\)\]/;
+  assert.match(pockets, workspace);
+  assert.match(pocketsLoading, workspace);
+  assert.match(pockets, /<aside aria-labelledby="pocket-guidance-title"/);
+  assert.match(pocketsLoading, /<aside[^>]+aria-label="Loading pocket guidance"/);
+  assert.match(pocketsLoading, /h-3 w-32/);
+  assert.match(pocketsLoading, /mt-1 h-8 w-28/);
+  assert.match(pockets, /<p className="mt-1 max-w-2xl text-sm text-slate-600">Organize the budgets Veyra uses for your transactions\.<\/p>/);
+  assert.match(pocketsLoading, /mt-1 h-10 w-72 max-w-full sm:h-5/);
+  for (const label of ["Add Pocket", "Rename", "Set Budget", "Make Default", "More Actions"]) {
+    assert.match(pockets, new RegExp(label));
+  }
+  for (const state of ["Pockets Couldn’t Be Loaded", "No Pockets Yet", "router\\.refresh\\(\\)"]) {
+    assert.match(pockets, new RegExp(state));
+  }
+  assert.doesNotMatch(pockets, /pocket\.(?:spent|remaining|used|limit)/);
+});
+
 test("keeps transaction loading stable and documents correction boundary", async () => {
   const [loading, readme, backlog] = await Promise.all([
     readSource("src/app/transactions/loading.tsx"),

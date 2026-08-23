@@ -86,6 +86,7 @@ export function OverviewDashboard({
       mainId="overview"
       skipLabel="Skip to overview"
     >
+      <div className="mx-auto max-w-[1280px] xl:px-2 xl:py-1">
         <header className="mb-2.5 flex flex-wrap items-start justify-between gap-2.5">
           <div><h1 className="text-2xl font-bold">Overview</h1><p className="mt-1 text-sm text-slate-500">Here’s your financial summary.</p></div>
           <label><span className="sr-only">Period</span>
@@ -232,6 +233,7 @@ export function OverviewDashboard({
             </section>
           </>
         )}
+      </div>
     </AppShell>
   );
 }

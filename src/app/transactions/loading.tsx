@@ -25,6 +25,7 @@ export default function Loading() {
         </div>
       </aside>
       <main className="p-4">
+        <div className="mx-auto max-w-[1280px] xl:px-2 xl:py-1">
         <header className="mb-6">
           <div className="h-8 w-40 rounded bg-slate-200" />
           <div className="mt-2 h-5 w-72 max-w-full rounded bg-slate-200" />
@@ -62,6 +63,7 @@ export default function Loading() {
             </li>
           ))}
         </ul>
+        </div>
       </main>
     </div>
   );

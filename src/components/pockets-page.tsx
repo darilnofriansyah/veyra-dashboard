@@ -39,13 +39,14 @@ function PocketList({ pockets, onOpen, onDefault }: {
   return (
     <ul className="pocket-list divide-y divide-veyra-line overflow-hidden rounded-veyra border border-veyra-line bg-white" aria-label="Pockets">
       {pockets.map((pocket) => (
-        <li key={pocket.id} className="grid min-w-0 gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+        <li key={pocket.id} className="grid min-w-0 gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
           <div className="min-w-0">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <h2 className="min-w-0 break-words text-base font-bold text-veyra-ink">{pocket.name}</h2>
+              <h3 className="min-w-0 break-words text-base font-bold text-veyra-ink">{pocket.name}</h3>
               {pocket.isDefault && <span className="rounded-full bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800">Default</span>}
             </div>
-            <p className="mt-1 text-lg font-semibold tabular-nums text-veyra-ink">{pocket.amount === null ? "No Budget Set" : formatIdr(pocket.amount)}</p>
+            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Monthly budget</p>
+            <p className="mt-1 text-xl font-bold tracking-[-0.03em] tabular-nums text-veyra-ink">{pocket.amount === null ? "No Budget Set" : formatIdr(pocket.amount)}</p>
           </div>
           <div className="hidden gap-2 sm:flex">
             <button type="button" onClick={(event) => onOpen({ mode: "rename", pocket }, event.currentTarget)} className={secondaryButton}>Rename</button>
@@ -102,6 +103,7 @@ export function PocketsPage({ result, viewerName }: { result: LoadPocketsResult;
   }, [router]);
 
   const unavailable = result.error;
+  const pocketCountLabel = `${result.pockets.length} ${result.pockets.length === 1 ? "pocket" : "pockets"}`;
   const openCreate = (button: HTMLButtonElement) => openDialog({ mode: "create" }, button);
 
   return (
@@ -113,14 +115,17 @@ export function PocketsPage({ result, viewerName }: { result: LoadPocketsResult;
       skipLabel="Skip to pockets"
     >
       <p role="status" aria-live="polite" className="sr-only">{announcement}</p>
-      <div className="mx-auto max-w-[960px] space-y-4 xl:px-2 xl:py-1">
+      <div className="mx-auto max-w-[1280px] space-y-4 xl:px-2 xl:py-1">
         <header className="flex flex-wrap items-end justify-between gap-3 border-b border-veyra-line pb-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Monthly budgets</p>
             <h1 className="mt-1 text-3xl font-bold tracking-[-0.04em] text-veyra-ink">Pockets</h1>
             <p className="mt-1 max-w-2xl text-sm text-slate-600">Organize the budgets Veyra uses for your transactions.</p>
           </div>
-          <button type="button" onClick={(event) => openCreate(event.currentTarget)} className="min-h-10 w-full rounded-lg bg-veyra-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 sm:w-auto motion-reduce:transition-none">Add Pocket</button>
+          <div className="flex w-full flex-wrap items-center justify-between gap-3 sm:w-auto sm:justify-end">
+            {!unavailable && <p className="text-sm font-semibold text-slate-600">{pocketCountLabel}</p>}
+            <button type="button" onClick={(event) => openCreate(event.currentTarget)} className="min-h-10 w-full rounded-lg bg-veyra-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 sm:w-auto motion-reduce:transition-none">Add Pocket</button>
+          </div>
         </header>
 
         {unavailable ? (
@@ -136,7 +141,25 @@ export function PocketsPage({ result, viewerName }: { result: LoadPocketsResult;
             <button type="button" onClick={(event) => openCreate(event.currentTarget)} className="mt-4 w-full rounded-lg bg-veyra-navy px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 sm:w-auto motion-reduce:transition-none">Add Pocket</button>
           </section>
         ) : (
-          <PocketList pockets={result.pockets} onOpen={openDialog} onDefault={handleDefault} />
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start">
+            <section aria-labelledby="pocket-list-title" className="min-w-0">
+              <div className="mb-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Your pockets</p>
+                <h2 id="pocket-list-title" className="mt-1 text-lg font-bold tracking-[-0.02em] text-veyra-ink">Monthly budget list</h2>
+              </div>
+              <PocketList pockets={result.pockets} onOpen={openDialog} onDefault={handleDefault} />
+            </section>
+            <aside aria-labelledby="pocket-guidance-title" className="rounded-veyra border border-veyra-navy bg-veyra-navy p-5 text-white">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-veyra-cyan">Pocket guidance</p>
+              <h2 id="pocket-guidance-title" className="mt-2 text-xl font-bold tracking-[-0.03em]">Keep every budget easy to recognize.</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-200">Use pockets to organize monthly spending and keep transaction corrections quick.</p>
+              <ul className="mt-5 space-y-3 border-t border-white/20 pt-4 text-sm text-slate-100">
+                <li className="flex gap-2"><span aria-hidden="true" className="text-veyra-cyan">→</span><span>Name each pocket after the spending it covers.</span></li>
+                <li className="flex gap-2"><span aria-hidden="true" className="text-veyra-cyan">→</span><span>Set or update its monthly budget from the list.</span></li>
+                <li className="flex gap-2"><span aria-hidden="true" className="text-veyra-cyan">→</span><span>Choose a default pocket for faster corrections.</span></li>
+              </ul>
+            </aside>
+          </div>
         )}
       </div>
       {selection && (

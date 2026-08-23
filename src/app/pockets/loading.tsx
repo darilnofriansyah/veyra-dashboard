@@ -21,29 +21,45 @@ export default function Loading() {
         </div>
       </aside>
       <main className="p-4">
-        <span role="status" aria-live="polite" className="sr-only">Loading pockets…</span>
-        <header className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-veyra-line pb-4">
-          <div>
-            <div className="h-8 w-28 rounded bg-slate-200" />
-            <div className="mt-2 h-5 w-72 max-w-full rounded bg-slate-200" />
-          </div>
-          <div className={`${skeleton} h-10 w-full sm:w-28`} />
-        </header>
-        <section aria-label="Loading pocket list" className="pocket-list-skeleton divide-y divide-veyra-line overflow-hidden rounded-veyra border border-veyra-line bg-white">
-          {Array.from({ length: 4 }, (_, index) => (
-            <div key={index} className="grid min-w-0 gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-              <div className="min-w-0">
-                <div className={`${skeleton} h-5 w-40 max-w-full`} />
-                <div className={`${skeleton} mt-3 h-4 w-28 max-w-full`} />
-              </div>
-              <div className="grid w-full gap-2 sm:flex sm:w-auto">
-                <div className={`${skeleton} h-10 w-full sm:w-20`} />
-                <div className={`${skeleton} h-10 w-full sm:w-24`} />
-                <div className={`${skeleton} h-10 w-full sm:w-28`} />
-              </div>
+        <div className="mx-auto max-w-[1280px] space-y-4 xl:px-2 xl:py-1">
+          <span role="status" aria-live="polite" className="sr-only">Loading pockets…</span>
+          <header className="flex flex-wrap items-end justify-between gap-3 border-b border-veyra-line pb-4">
+            <div>
+              <div className={`${skeleton} h-3 w-32`} />
+              <div className={`${skeleton} mt-1 h-8 w-28`} />
+              <div className={`${skeleton} mt-1 h-10 w-72 max-w-full sm:h-5`} />
             </div>
-          ))}
-        </section>
+            <div className="flex w-full flex-wrap items-center justify-between gap-3 sm:w-auto sm:justify-end">
+              <div className={`${skeleton} h-5 w-20`} />
+              <div className={`${skeleton} h-10 w-full sm:w-28`} />
+            </div>
+          </header>
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start">
+            <div className="min-w-0">
+              <div className="mb-3">
+                <div className={`${skeleton} h-3 w-24`} />
+                <div className={`${skeleton} mt-2 h-6 w-44`} />
+              </div>
+              <section aria-label="Loading pocket list" className="pocket-list-skeleton divide-y divide-veyra-line overflow-hidden rounded-veyra border border-veyra-line bg-white">
+                {Array.from({ length: 4 }, (_, index) => (
+                  <div key={index} className="grid min-w-0 gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                    <div className="min-w-0">
+                      <div className={`${skeleton} h-5 w-40 max-w-full`} />
+                      <div className={`${skeleton} mt-3 h-3 w-28 max-w-full`} />
+                      <div className={`${skeleton} mt-2 h-6 w-32 max-w-full`} />
+                    </div>
+                    <div className="grid w-full gap-2 sm:flex sm:w-auto">
+                      <div className={`${skeleton} h-10 w-full sm:w-20`} />
+                      <div className={`${skeleton} h-10 w-full sm:w-24`} />
+                      <div className={`${skeleton} h-10 w-full sm:w-28`} />
+                    </div>
+                  </div>
+                ))}
+              </section>
+            </div>
+            <aside className={`${skeleton} min-h-64`} aria-label="Loading pocket guidance" />
+          </div>
+        </div>
       </main>
     </div>
   );
