@@ -1,6 +1,6 @@
 import { formatIdr, type OverviewSummary } from "@/lib/finance";
 
-const colors = ["#00B3FF", "#3C91E6", "#A64DFF", "#6D79D8", "#8CCFF1", "#CBD5E1"];
+const colors = ["#00B3FF", "#168BC4", "#2F6F96", "#466579", "#7892A3", "#CBD5E1"];
 export function CategoryBreakdown({ categories }: { categories: OverviewSummary["categories"] }) {
   if (!categories.length) return <p className="text-sm">No transactions for this period.</p>;
   const total = categories.reduce((sum, category) => sum + category.amount, 0);

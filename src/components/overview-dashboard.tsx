@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, CreditCard, Gauge, Receipt, Sparkle, TrendUp, Wallet, Warning } from "@phosphor-icons/react";
+import { CheckCircle, CreditCard, Sparkle, Warning } from "@phosphor-icons/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -64,36 +64,19 @@ export function OverviewDashboard({
   const insight = highestCategory
     ? `${highestCategory.category} ${period === "current" ? "is" : "was"} your largest expense at ${highestCategory.percent}% of spending.`
     : "There is not enough activity to form an insight.";
-  const metrics = summary ? [
-    {
-      label: "Total Spent",
-      value: summary.totals.spent,
-      previous: summary.comparison.spent,
-      lowerIsBetter: true,
-      icon: Receipt
-    },
-    {
-      label: "Total Income",
-      value: summary.totals.income,
-      previous: summary.comparison.income,
-      lowerIsBetter: false,
-      icon: Wallet
-    },
-    {
-      label: "Net Cashflow",
-      value: summary.totals.netCashflow,
-      previous: summary.comparison.netCashflow,
-      lowerIsBetter: false,
-      icon: TrendUp
-    },
-    {
-      label: "Daily Average Spend",
-      value: summary.totals.dailyAverage,
-      previous: summary.comparison.dailyAverage,
-      lowerIsBetter: true,
-      icon: Gauge
-    }
-  ] : [];
+  const neutralDelta = { text: "No activity", className: "text-slate-500" };
+  const spentDelta = summary
+    ? comparison(summary.totals.spent, summary.comparison.spent, true)
+    : neutralDelta;
+  const incomeDelta = summary
+    ? comparison(summary.totals.income, summary.comparison.income, false)
+    : neutralDelta;
+  const cashflowDelta = summary
+    ? comparison(summary.totals.netCashflow, summary.comparison.netCashflow, false)
+    : neutralDelta;
+  const averageDelta = summary
+    ? comparison(summary.totals.dailyAverage, summary.comparison.dailyAverage, true)
+    : neutralDelta;
 
   return (
     <AppShell
@@ -120,52 +103,57 @@ export function OverviewDashboard({
           </section>
         ) : (
           <>
-            <section aria-label="Financial health" className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
-              {metrics.map((metric) => {
-                const delta = comparison(metric.value, metric.previous, metric.lowerIsBetter);
-                const Icon = metric.icon;
-                return (
-                  <article key={metric.label} className={panel}>
-                    <span className="flex items-center justify-between gap-2">
-                      <span className={label}>{metric.label}</span>
-                      <Icon size={16} weight="duotone" aria-hidden="true" className="text-veyra-cyan" />
-                    </span>
-                    <strong className={value}>{summary.hasTransactions ? formatIdr(metric.value) : "—"}</strong>
-                    <span className={`mt-1.5 block text-xs ${delta.className}`}>{summary.hasTransactions ? delta.text : "No activity"}</span>
-                  </article>
-                );
-              })}
-            </section>
-
-            <section
-              aria-label="Credit card"
-              className={`${panel} mt-2.5 border-l-[3px] border-l-veyra-cyan`}
-            >
-              <h2 className="mb-3 flex items-center gap-2 text-sm font-bold">
-                <CreditCard size={16} weight="duotone" aria-hidden="true" className="text-veyra-cyan" />
-                Credit Card
-              </h2>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <span className={label}>Amount to Pay</span>
-                  <strong className="mt-1 block text-2xl font-bold tracking-[-0.04em] text-veyra-ink">{formatIdr(summary.creditCard.statementBalance)}</strong>
+            <section aria-label="Financial pulse" className={`${panel} grid gap-5 p-4 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]`}>
+              <div className="min-w-0">
+                <span className={label}>Net Cashflow</span>
+                <strong className="mt-1 block text-3xl font-bold tracking-[-0.05em] tabular-nums text-veyra-ink">
+                  {summary.hasTransactions ? formatIdr(summary.totals.netCashflow) : "—"}
+                </strong>
+                <span className={`mt-1.5 block text-xs ${cashflowDelta.className}`}>
+                  {summary.hasTransactions ? cashflowDelta.text : "No activity"}
+                </span>
+                <div className="mt-5 grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-4">
+                  <div className="min-w-0">
+                    <span className={label}>Total Income</span>
+                    <strong className={value}>{summary.hasTransactions ? formatIdr(summary.totals.income) : "—"}</strong>
+                    <span className={`mt-1.5 block text-xs ${incomeDelta.className}`}>{summary.hasTransactions ? incomeDelta.text : "No activity"}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <span className={label}>Total Spent</span>
+                    <strong className={value}>{summary.hasTransactions ? formatIdr(summary.totals.spent) : "—"}</strong>
+                    <span className={`mt-1.5 block text-xs ${spentDelta.className}`}>{summary.hasTransactions ? spentDelta.text : "No activity"}</span>
+                  </div>
                 </div>
-                <div>
-                  <span className={label}>Credit Used</span>
-                  <strong className={value}>{formatIdr(summary.creditCard.used)}</strong>
+                <div className="mt-4 border-t border-veyra-line pt-3">
+                  <span className={label}>Daily Average Spend</span>
+                  <strong className={value}>{summary.hasTransactions ? formatIdr(summary.totals.dailyAverage) : "—"}</strong>
+                  <span className={`mt-1.5 block text-xs ${averageDelta.className}`}>{summary.hasTransactions ? averageDelta.text : "No activity"}</span>
                 </div>
               </div>
-              <progress
-                max="100"
-                value={Math.min(creditUsage, 100)}
-                aria-label={`Credit card used: ${formatIdr(summary.creditCard.used)} of ${formatIdr(summary.creditCard.limit)}, ${creditUsage}%`}
-                className="budget-progress mt-3 h-1.5 w-full"
-              >
-                {creditUsage}%
-              </progress>
-              <span className="mt-1.5 block text-xs text-slate-500">
-                {creditUsage}% of {formatIdr(summary.creditCard.limit)} limit
-              </span>
+              <section aria-label="Credit card" className="min-w-0 border-t border-veyra-line pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+                <h2 className="flex items-center gap-2 text-sm font-bold">
+                  <CreditCard size={16} weight="duotone" aria-hidden="true" className="text-veyra-cyan" />
+                  Credit Card
+                </h2>
+                <span className={`${label} mt-4 block`}>Amount to Pay</span>
+                <strong className="mt-1 block text-2xl font-bold tracking-[-0.04em] tabular-nums text-veyra-ink">{formatIdr(summary.creditCard.statementBalance)}</strong>
+                <span className={`${label} mt-4 block`}>Credit Used</span>
+                <strong className={value}>{formatIdr(summary.creditCard.used)}</strong>
+                <progress max="100" value={Math.min(creditUsage, 100)} aria-label={`Credit card used: ${formatIdr(summary.creditCard.used)} of ${formatIdr(summary.creditCard.limit)}, ${creditUsage}%`} className="budget-progress mt-3 h-1.5 w-full">{creditUsage}%</progress>
+                <span className="mt-1.5 block text-xs text-slate-500">{creditUsage}% of {formatIdr(summary.creditCard.limit)} limit</span>
+              </section>
+            </section>
+
+            <section className="mt-2.5">
+              <article className={`${panel} border-t-[3px] ${latestAlert ? "border-t-veyra-warning" : "border-t-veyra-success"}`}>
+                <h2 className="mb-3 flex items-center gap-2 text-sm font-bold">
+                  {latestAlert
+                    ? <Warning size={16} weight="duotone" aria-hidden="true" />
+                    : <CheckCircle size={16} weight="duotone" aria-hidden="true" className="text-veyra-success" />}
+                  Latest Alert
+                </h2>
+                <p className="text-sm">{latestAlert ? `${latestAlert.category} budget ${latestAlert.status === "over" ? "is over its limit at" : "is at"} ${latestAlert.percent}%.` : "Tracked budgets are on course."}</p>
+              </article>
             </section>
 
             <section className="mt-2.5 grid gap-2.5 xl:grid-cols-[1.6fr_1fr]">
@@ -203,27 +191,34 @@ export function OverviewDashboard({
               <article className={panel}>
                 <h2 className="mb-3 text-sm font-bold">Recent Transactions</h2>
                 {summary.recentTransactions.length ? (
-                  <div className="overflow-x-auto"><table className="w-full text-left text-xs">
-                    <thead className="text-slate-500"><tr><th scope="col" className="p-1.5">Date</th><th scope="col" className="p-1.5">Merchant</th><th scope="col" className="p-1.5">Category</th><th scope="col" className="p-1.5 text-right">Amount</th></tr></thead>
-                    <tbody>{summary.recentTransactions.map((transaction) => <tr key={transaction.id} className="border-t border-veyra-line">
-                      <td className="p-1.5"><time dateTime={transaction.date}>{transactionDate.format(new Date(`${transaction.date}T00:00:00Z`))}</time></td><td className="p-1.5">{transaction.merchant ?? "Unknown merchant"}</td><td className="p-1.5">{transaction.category ?? "Uncategorized"}</td>
-                      <td className={`p-1.5 text-right ${transaction.type === "income" ? "text-veyra-success" : ""}`}>{transaction.type === "income" ? "+" : "−"}{formatIdr(transaction.amount)}</td>
-                    </tr>)}</tbody>
-                  </table></div>
+                  <>
+                    <div className="overview-recent-desktop hidden md:block overflow-x-auto"><table className="w-full text-left text-xs">
+                      <thead className="text-slate-500"><tr><th scope="col" className="p-1.5">Date</th><th scope="col" className="p-1.5">Merchant</th><th scope="col" className="p-1.5">Category</th><th scope="col" className="p-1.5 text-right">Amount</th></tr></thead>
+                      <tbody>{summary.recentTransactions.map((transaction) => <tr key={transaction.id} className="border-t border-veyra-line">
+                        <td className="p-1.5"><time dateTime={transaction.date}>{transactionDate.format(new Date(`${transaction.date}T00:00:00Z`))}</time></td><td className="p-1.5">{transaction.merchant ?? "Unknown merchant"}</td><td className="p-1.5">{transaction.category ?? "Uncategorized"}</td>
+                        <td className={`p-1.5 text-right ${transaction.type === "income" ? "text-veyra-success" : ""}`}>{transaction.type === "income" ? "+" : "−"}{formatIdr(transaction.amount)}</td>
+                      </tr>)}</tbody>
+                    </table></div>
+                    <ul className="overview-recent-mobile divide-y divide-veyra-line md:hidden" aria-label="Recent transactions">
+                      {summary.recentTransactions.map((transaction) => (
+                        <li key={transaction.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-3 py-3">
+                          <strong className="min-w-0 break-words text-sm">{transaction.merchant ?? "Unknown merchant"}</strong>
+                          <span className={`whitespace-nowrap text-sm font-semibold tabular-nums ${transaction.type === "income" ? "text-veyra-success" : ""}`}>
+                            {transaction.type === "income" ? "+" : "−"}{formatIdr(transaction.amount)}
+                          </span>
+                          <span className="mt-1 text-xs text-slate-500">
+                            <time dateTime={transaction.date}>{transactionDate.format(new Date(`${transaction.date}T00:00:00Z`))}</time>
+                            {` · ${transaction.category ?? "Uncategorized"}`}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
                 ) : <p className="text-sm">No transactions for this period.</p>}
               </article>
             </section>
 
-            <section className="mt-2.5 grid gap-2.5 xl:grid-cols-2">
-              <article className={`${panel} border-t-[3px] ${latestAlert ? "border-t-veyra-warning" : "border-t-veyra-success"}`}>
-                <h2 className="mb-3 flex items-center gap-2 text-sm font-bold">
-                  {latestAlert
-                    ? <Warning size={16} weight="duotone" aria-hidden="true" />
-                    : <CheckCircle size={16} weight="duotone" aria-hidden="true" className="text-veyra-success" />}
-                  Latest Alert
-                </h2>
-                <p className="text-sm">{latestAlert ? `${latestAlert.category} budget ${latestAlert.status === "over" ? "is over its limit at" : "is at"} ${latestAlert.percent}%.` : "Tracked budgets are on course."}</p>
-              </article>
+            <section className="mt-2.5">
               <article id="veyra-insight" className={`${panel} relative min-h-40 overflow-hidden`}>
                 <picture aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-[48%] max-w-[280px]">
                   <source srcSet="/assets/veyra-dashboard-portrait.webp" type="image/webp" />

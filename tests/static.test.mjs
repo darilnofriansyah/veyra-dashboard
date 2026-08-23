@@ -4,6 +4,49 @@ import { readFile } from "node:fs/promises";
 
 const readSource = (path) => readFile(path, "utf8").catch(() => "");
 
+test("shares one safe mobile navigation across browser and Telegram", async () => {
+  const [shell, css] = await Promise.all([
+    readSource("src/components/app-shell.tsx"),
+    readSource("src/app/globals.css")
+  ]);
+
+  assert.match(shell, /app-mobile-header/);
+  assert.match(shell, /app-sidebar/);
+  assert.match(shell, /app-nav/);
+  assert.match(css, /@media \(max-width: 767px\)/);
+  assert.match(css, /\.app-shell[\s\S]*padding-bottom:/);
+  assert.match(css, /env\(safe-area-inset-bottom/);
+  assert.match(css, /\.app-sidebar[\s\S]*position:\s*fixed/);
+  assert.match(css, /\.app-nav[\s\S]*repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(css, /touch-action:\s*manipulation/);
+  assert.doesNotMatch(css, /transition:\s*all/);
+});
+
+test("reserves room for wrapped mobile navigation labels", async () => {
+  const css = await readSource("src/app/globals.css");
+
+  assert.match(css, /\.app-shell[\s\S]*padding-bottom:\s*calc\(7rem \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.match(css, /html\[data-telegram-mini-app="true"\] \.app-shell[\s\S]*padding-bottom:\s*calc\(7rem \+ var\(--veyra-telegram-safe-bottom\)\)/);
+});
+
+test("keeps responsive shell structure in every loading route", async () => {
+  const loadingRoutes = await Promise.all([
+    readSource("src/app/dashboard/loading.tsx"),
+    readSource("src/app/transactions/loading.tsx"),
+    readSource("src/app/pockets/loading.tsx")
+  ]);
+
+  for (const loading of loadingRoutes) {
+    assert.match(loading, /app-shell/);
+    assert.match(loading, /app-mobile-header/);
+    assert.match(loading, /app-sidebar/);
+    assert.match(loading, /app-nav/);
+    assert.match(loading, /xl:grid-cols-\[216px_1fr\]/);
+    assert.match(loading, /aria-busy="true"/);
+    assert.match(loading, /role="status" aria-live="polite"/);
+  }
+});
+
 test("uses App Router, Tailwind v4, and no unfinished dashboard destinations", async () => {
   const [page, dashboard, css, postcss] = await Promise.all([
     readFile("src/app/dashboard/page.tsx", "utf8"),
@@ -60,7 +103,7 @@ test("composes the approved dashboard hierarchy", async () => {
   const dashboard = await readSource("src/components/overview-dashboard.tsx");
 
   for (const section of [
-    "Financial health",
+    "Financial pulse",
     "Spending Trend",
     "Spending by Category",
     "Budget Status",
@@ -94,9 +137,37 @@ test("renders one period-owned accessible credit card summary", async () => {
   );
   assert.equal([...dashboard.matchAll(/aria-label="Credit card"/g)].length, 1);
   assert.ok(
-    dashboard.indexOf('aria-label="Financial health"')
+    dashboard.indexOf('aria-label="Financial pulse"')
       < dashboard.indexOf('aria-label="Credit card"')
   );
+});
+
+test("prioritizes one responsive financial pulse", async () => {
+  const [dashboard, categories, loading] = await Promise.all([
+    readSource("src/components/overview-dashboard.tsx"),
+    readSource("src/components/category-breakdown.tsx"),
+    readSource("src/app/dashboard/loading.tsx")
+  ]);
+
+  assert.equal([...dashboard.matchAll(/aria-label="Financial pulse"/g)].length, 1);
+  assert.ok(dashboard.indexOf("Net Cashflow") < dashboard.indexOf("Total Income"));
+  assert.ok(dashboard.indexOf("Latest Alert") < dashboard.indexOf("Spending Trend"));
+  assert.match(dashboard, /overview-recent-mobile/);
+  assert.match(dashboard, /overview-recent-desktop/);
+  assert.doesNotMatch(categories, /#A64DFF|#6D79D8/);
+  assert.doesNotMatch(await readSource("src/app/globals.css"), /veyra-purple/);
+  assert.match(loading, /aria-label="Loading financial pulse"/);
+});
+
+test("keeps the loading pulse fluid and complete", async () => {
+  const loading = await readSource("src/app/dashboard/loading.tsx");
+  const pulse = loading.match(/<section aria-label="Loading financial pulse"[\s\S]*?<\/section>/)?.[0] ?? "";
+
+  assert.match(pulse, /grid-cols-\[repeat\(auto-fit,minmax\(min\(100%,9rem\),1fr\)\)\]/);
+  assert.doesNotMatch(pulse, /grid-cols-2/);
+  for (const field of ["Net Cashflow", "Total Income", "Total Spent", "Daily Average Spend", "Amount to Pay", "Credit Used", "Credit Limit"]) {
+    assert.match(pulse, new RegExp(field));
+  }
 });
 
 test("uses raw budget status for rows, accessibility, and alert semantics", async () => {
@@ -238,7 +309,7 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.match(view, /^"use client"/);
   assert.match(view, /activePage="transactions"/);
   assert.match(view, /accountContext="Finalized records"/);
-  for (const label of ["Cycle", "Category", "Type", "Merchant search"]) {
+  for (const label of ["Cycle", "Category", "Type", "Merchant Search"]) {
     assert.match(view, new RegExp(`>${label}<`));
   }
   for (const name of ["cycle", "category", "type", "search"]) {
@@ -248,7 +319,7 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.match(view, /new FormData\(event\.currentTarget\)/);
   assert.match(view, /router\.push\(transactionHref\(filters, changes\)\)/);
   assert.match(view, /transactionHref\(filters, \{ \[filter\.key\]: null \}\)/);
-  assert.match(view, />Clear filters<\/Link>/);
+  assert.match(view, />Clear Filters<\/Link>/);
   const delimiterCategoryKey = JSON.stringify([null, "a|income", null, null]);
   const categoryAndTypeKey = JSON.stringify([null, "a", "income", null]);
   assert.notEqual(delimiterCategoryKey, categoryAndTypeKey);
@@ -280,9 +351,9 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   const resultStatus = view.indexOf('<span key={resultAnnouncement.key}>');
   const resultBranches = view.indexOf("{unavailable ? (");
   assert.ok(resultStatus >= 0 && resultStatus < resultBranches);
-  assert.doesNotMatch(view, /<section role="status"[^>]*>\s*<h2[^>]*>Transactions couldn’t be loaded/);
+  assert.doesNotMatch(view, /<section role="status"[^>]*>\s*<h2[^>]*>Transactions Couldn’t Be Loaded/);
   assert.match(view, /Transactions recorded through Telegram or email will appear here\./);
-  assert.match(view, /No finalized transactions match these filters\./);
+  assert.match(view, /No Finalized Transactions Match These Filters\./);
   assert.match(view, /router\.refresh\(\)/);
   assert.match(view, /className="[^"]*transition-colors[^"]*hover:bg-veyra-navy-2[^"]*motion-reduce:transition-none">Retry<\/button>/);
   assert.match(view, /direction: "previous"/);
@@ -290,6 +361,20 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.match(view, />Previous<\/Link>/);
   assert.match(view, />Next<\/Link>/);
   assert.doesNotMatch(view, /Create transaction|New transaction/);
+});
+
+test("renders mobile transaction records without table scrolling", async () => {
+  const [view, loading] = await Promise.all([
+    readSource("src/components/transactions-page.tsx"),
+    readSource("src/app/transactions/loading.tsx")
+  ]);
+
+  assert.match(view, /transactions-desktop-table hidden md:block/);
+  assert.match(view, /transactions-mobile-list divide-y/);
+  assert.match(view, /transaction-mobile-filters/);
+  assert.match(view, /<summary[^>]*>Filters/);
+  assert.match(view, /aria-label="Finalized transaction records"/);
+  assert.match(loading, /transactions-mobile-skeleton/);
 });
 
 test("edits a selected transaction in an accessible native side panel", async () => {
@@ -305,6 +390,7 @@ test("edits a selected transaction in an accessible native side panel", async ()
   assert.match(dialog, /useActionState\(editTransaction, initialEditState\)/);
   assert.match(dialog, /onClose=\{onClose\}/);
   assert.match(dialog, /onCancel=\{/);
+  assert.match(dialog, /event\.preventDefault\(\);[\s\S]*closeDialog\(\);/);
   assert.match(dialog, /motion-reduce:transition-none/);
 
   for (const name of ["transactionId", "expectedUpdatedAt", "type"]) {
@@ -325,10 +411,11 @@ test("edits a selected transaction in an accessible native side panel", async ()
   assert.match(dialog, /disabled=\{pending\}/);
   assert.match(dialog, /disabled=\{pending \|\| !dirty\}/);
   assert.match(dialog, /aria-busy=\{pending\}/);
-  assert.match(dialog, /if \(pending\) return;/);
-  assert.match(dialog, /if \(!pending\) event\.currentTarget\.close\(\);/);
+  assert.match(dialog, /if \(pending\) return false;/);
   assert.match(dialog, /disabled=\{pending\}[^>]*aria-label="Close transaction editor"/s);
   assert.match(dialog, /disabled=\{pending\}[^>]*>Cancel<\/button>/s);
+  assert.match(dialog, />Edit Transaction<\/h2>/);
+  assert.match(dialog, /Save Changes/);
   assert.match(dialog, /state\.status === "validation"/);
   assert.match(dialog, /state\.status === "conflict"/);
   assert.match(dialog, />Reload transaction<\/button>/);
@@ -445,14 +532,14 @@ test("offers accessible pocket dialogs and truthful pocket states", async () => 
   assert.match(view, /^"use client"/);
   assert.match(view, /activePage="pockets"/);
   assert.match(view, /formatIdr\(pocket\.amount\)/);
-  assert.match(view, /No budget set/);
+  assert.match(view, /No Budget Set/);
   assert.match(view, /Default/);
-  for (const label of ["Add pocket", "Rename", "Set budget", "Make default"]) {
+  for (const label of ["Add Pocket", "Rename", "Set Budget", "Make Default"]) {
     assert.match(view, new RegExp(label));
   }
-  assert.match(view, /Pockets couldn’t be loaded/);
+  assert.match(view, /Pockets Couldn’t Be Loaded/);
   assert.match(view, />Retry<\/button>/);
-  assert.match(view, /No pockets yet/);
+  assert.match(view, /No Pockets Yet/);
   assert.match(view, /role="status" aria-live="polite"/);
   assert.match(view, /returnFocusRef\.current\?\.focus\(\)/);
   assert.doesNotMatch(view, /Delete|Archive/);
@@ -468,7 +555,75 @@ test("offers accessible pocket dialogs and truthful pocket states", async () => 
   assert.match(dialog, /state\.status === "success"/);
   assert.match(dialog, /dialogRef\.current\?\.close\(\)/);
   assert.match(dialog, /onSaved\(\)/);
+  for (const title of ["Add Pocket", "Rename Pocket", "Set Monthly Budget"]) {
+    assert.match(dialog, new RegExp(title));
+  }
+  assert.match(dialog, /Save Changes/);
   assert.doesNotMatch(dialog, /Delete|Archive|null-budget/);
+});
+
+test("keeps mobile sheets safe and prevents silent dirty closes", async () => {
+  const [transactionDialog, pocketDialog, css] = await Promise.all([
+    readSource("src/components/transaction-edit-dialog.tsx"),
+    readSource("src/components/pocket-dialog.tsx"),
+    readSource("src/app/globals.css")
+  ]);
+
+  assert.match(transactionDialog, /Discard unsaved changes\?/);
+  assert.match(transactionDialog, /beforeunload/);
+  assert.match(transactionDialog, /autoComplete="off"/);
+  assert.match(pocketDialog, /role="status" aria-live="polite"/);
+  assert.match(pocketDialog, /autoComplete="off"/);
+  assert.match(css, /overscroll-behavior:\s*contain/);
+  assert.match(css, /env\(safe-area-inset-bottom/);
+});
+
+test("guards Next in-app navigation while the transaction editor is dirty", async () => {
+  const dialog = await readSource("src/components/transaction-edit-dialog.tsx");
+
+  assert.match(dialog, /document\.addEventListener\("click", navigationGuard, true\)/);
+  assert.match(dialog, /event\.stopImmediatePropagation\(\)/);
+  assert.match(dialog, /Discard unsaved changes\?/);
+});
+
+test("guards programmatic navigation while the transaction editor is dirty", async () => {
+  const [dialog, view] = await Promise.all([
+    readSource("src/components/transaction-edit-dialog.tsx"),
+    readSource("src/components/transactions-page.tsx")
+  ]);
+
+  assert.match(dialog, /window\.addEventListener\("veyra:before-navigation", navigationGuard\)/);
+  assert.match(dialog, /if \(pending \|\| !window\.confirm\("Discard unsaved changes\?"\)\) event\.preventDefault\(\);/);
+  assert.match(view, /if \(!window\.dispatchEvent\(new Event\("veyra:before-navigation", \{ cancelable: true \}\)\)\) return;/);
+  assert.equal((dialog.match(/veyra:before-navigation/g) ?? []).length, 2);
+  assert.equal((view.match(/veyra:before-navigation/g) ?? []).length, 1);
+});
+
+test("refreshes a transaction only after its dialog closes", async () => {
+  const dialog = await readSource("src/components/transaction-edit-dialog.tsx");
+  const reloadStart = dialog.indexOf("function reloadTransaction");
+  const reloadEnd = dialog.indexOf("\n  }\n\n  const amountError", reloadStart);
+  const reload = dialog.slice(reloadStart, reloadEnd);
+
+  assert.match(dialog, /function closeDialog\(force = false\): boolean/);
+  assert.match(dialog, /if \(pending\) return false;/);
+  assert.match(dialog, /if \(!force && dirty && !window\.confirm\("Discard unsaved changes\?"\)\) return false;/);
+  assert.match(dialog, /dialogRef\.current\?\.close\(\);\s*return true;/);
+  assert.match(reload, /if \(closeDialog\(state\.status === "conflict" \|\| state\.status === "not_found"\)\) router\.refresh\(\);/);
+  assert.ok(reload.indexOf("closeDialog") < reload.indexOf("router.refresh"));
+});
+
+test("uses divided pockets with compact mobile actions", async () => {
+  const [view, loading] = await Promise.all([
+    readSource("src/components/pockets-page.tsx"),
+    readSource("src/app/pockets/loading.tsx")
+  ]);
+
+  assert.match(view, /pocket-list divide-y/);
+  assert.match(view, /<details className="pocket-mobile-actions/);
+  assert.match(view, /<summary[^>]*>More Actions<\/summary>/);
+  assert.match(view, /hidden gap-2 sm:flex/);
+  assert.match(loading, /pocket-list-skeleton/);
 });
 
 test("keeps transaction loading stable and documents correction boundary", async () => {

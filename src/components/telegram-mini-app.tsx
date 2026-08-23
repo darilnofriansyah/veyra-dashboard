@@ -100,7 +100,10 @@ export function TelegramMiniApp() {
         webApp.setBottomBarColor?.("#ffffff");
       }
     };
-    const goBack = () => router.replace("/dashboard");
+    const goBack = () => {
+      if (!window.dispatchEvent(new Event("veyra:before-navigation", { cancelable: true }))) return;
+      router.replace("/dashboard");
+    };
     const secondary = pathname === "/transactions" || pathname === "/pockets";
     const events: TelegramEvent[] = ["themeChanged", "viewportChanged"];
     if (webApp.isVersionAtLeast?.("8.0")) {

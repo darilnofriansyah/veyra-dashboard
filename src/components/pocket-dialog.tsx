@@ -21,9 +21,9 @@ const initialPocketActionState: PocketActionState = { status: "idle" };
 const inputClass = "mt-1 h-10 w-full rounded-lg border border-veyra-line bg-white px-3 text-sm text-veyra-ink";
 
 function titleFor(mode: PocketDialogMode): string {
-  if (mode === "create") return "Add pocket";
-  if (mode === "rename") return "Rename pocket";
-  return "Set monthly budget";
+  if (mode === "create") return "Add Pocket";
+  if (mode === "rename") return "Rename Pocket";
+  return "Set Monthly Budget";
 }
 
 function descriptionFor(state: PocketActionState): string {
@@ -106,7 +106,7 @@ export function PocketDialog({ mode, pocket, onClose, onSaved }: PocketDialogPro
         </header>
 
         {state.status !== "idle" && state.status !== "success" && (
-          <p id={statusId} className="mt-4 rounded-lg border border-veyra-line bg-slate-50 p-3 text-sm text-slate-700">
+          <p id={statusId} role="status" aria-live="polite" className="mt-4 rounded-lg border border-veyra-line bg-slate-50 p-3 text-sm text-slate-700">
             {descriptionFor(state)}
           </p>
         )}
@@ -120,6 +120,7 @@ export function PocketDialog({ mode, pocket, onClose, onSaved }: PocketDialogPro
                 id={nameId}
                 name="name"
                 type="text"
+                autoComplete="off"
                 required
                 maxLength={200}
                 defaultValue={mode === "rename" ? pocket?.name : ""}
@@ -140,6 +141,7 @@ export function PocketDialog({ mode, pocket, onClose, onSaved }: PocketDialogPro
                 name="amount"
                 type="number"
                 inputMode="numeric"
+                autoComplete="off"
                 min="1"
                 step="1"
                 required
@@ -156,7 +158,7 @@ export function PocketDialog({ mode, pocket, onClose, onSaved }: PocketDialogPro
         <footer className="mt-5 flex flex-wrap justify-end gap-2 border-t border-veyra-line pt-4">
           <button type="button" onClick={closeDialog} disabled={pending} className="min-h-10 rounded-lg border border-veyra-line bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:text-veyra-ink disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none">Cancel</button>
           <button type="submit" disabled={pending} className="min-h-10 rounded-lg bg-veyra-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none">
-            {pending ? "Saving…" : "Save changes"}
+            {pending ? "Saving…" : "Save Changes"}
           </button>
         </footer>
       </form>

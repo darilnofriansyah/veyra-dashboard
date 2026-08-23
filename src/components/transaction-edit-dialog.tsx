@@ -70,7 +70,7 @@ export function TransactionEditDialog({
     if (state.status === "success") {
       onSaved();
       router.refresh();
-      dialogRef.current?.close();
+      closeDialog(true);
     }
   }, [onSaved, router, state.status]);
 
@@ -82,14 +82,57 @@ export function TransactionEditDialog({
     else if (state.fieldErrors.pocketId) pocketRef.current?.focus();
   }, [state]);
 
-  function closeDialog(): void {
-    if (pending) return;
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = true;
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const navigationGuard = (event: MouseEvent) => {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (!(event.target instanceof Element)) return;
+      const link = event.target.closest("a[href]");
+      if (!(link instanceof HTMLAnchorElement) || link.target && link.target !== "_self" || link.hasAttribute("download")) return;
+
+      const destination = new URL(link.href, window.location.href);
+      if (
+        destination.origin !== window.location.origin
+        || destination.pathname === window.location.pathname && destination.search === window.location.search
+      ) return;
+
+      if (!pending && window.confirm("Discard unsaved changes?")) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+
+    document.addEventListener("click", navigationGuard, true);
+    return () => document.removeEventListener("click", navigationGuard, true);
+  }, [dirty, pending]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const navigationGuard = (event: Event) => {
+      if (pending || !window.confirm("Discard unsaved changes?")) event.preventDefault();
+    };
+    window.addEventListener("veyra:before-navigation", navigationGuard);
+    return () => window.removeEventListener("veyra:before-navigation", navigationGuard);
+  }, [dirty, pending]);
+
+  function closeDialog(force = false): boolean {
+    if (pending) return false;
+    if (!force && dirty && !window.confirm("Discard unsaved changes?")) return false;
     dialogRef.current?.close();
+    return true;
   }
 
   function reloadTransaction(): void {
-    router.refresh();
-    closeDialog();
+    if (closeDialog(state.status === "conflict" || state.status === "not_found")) router.refresh();
   }
 
   const amountError = state.status === "validation" ? state.fieldErrors.amount : undefined;
@@ -106,7 +149,7 @@ export function TransactionEditDialog({
       onClose={onClose}
       onCancel={(event) => {
         event.preventDefault();
-        if (!pending) event.currentTarget.close();
+        closeDialog();
       }}
       className="transaction-edit-dialog motion-reduce:transition-none"
     >
@@ -114,11 +157,11 @@ export function TransactionEditDialog({
         <header className="flex items-start justify-between gap-4 border-b border-veyra-line px-5 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Correct finalized record</p>
-            <h2 id={titleId} className="mt-1 text-xl font-bold tracking-[-0.03em] text-veyra-ink">Edit transaction</h2>
+            <h2 id={titleId} className="mt-1 text-xl font-bold tracking-[-0.03em] text-veyra-ink">Edit Transaction</h2>
           </div>
           <button
             type="button"
-            onClick={closeDialog}
+            onClick={() => closeDialog()}
             disabled={pending}
             aria-label="Close transaction editor"
             className="grid size-10 shrink-0 place-items-center rounded-lg border border-veyra-line text-xl text-slate-600 transition-colors hover:border-slate-300 hover:text-veyra-ink disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none"
@@ -172,6 +215,7 @@ export function TransactionEditDialog({
                 name="amount"
                 type="number"
                 inputMode="numeric"
+                autoComplete="off"
                 min="1"
                 step="1"
                 required
@@ -196,6 +240,7 @@ export function TransactionEditDialog({
                 id={merchantId}
                 name="merchant"
                 type="text"
+                autoComplete="off"
                 value={merchant}
                 onChange={(event) => setMerchant(event.target.value)}
                 required={transaction.type === "expense"}
@@ -214,6 +259,7 @@ export function TransactionEditDialog({
                 id={categoryId}
                 name="category"
                 type="text"
+                autoComplete="off"
                 value={category}
                 onChange={(event) => setCategory(event.target.value)}
                 required={transaction.type === "expense"}
@@ -231,6 +277,7 @@ export function TransactionEditDialog({
                 ref={pocketRef}
                 id={pocketId}
                 name="pocketId"
+                autoComplete="off"
                 value={selectedPocketId}
                 onChange={(event) => setPocketId(event.target.value)}
                 disabled={pending || pocketsUnavailable}
@@ -249,9 +296,9 @@ export function TransactionEditDialog({
             {state.status !== "conflict" && state.status !== "not_found" && (
               <footer className="flex flex-wrap justify-end gap-2 border-t border-veyra-line pt-4">
                 {!dirty && <p aria-live="polite" className="w-full text-right text-xs text-slate-500">Change amount, merchant, category, or pocket to save.</p>}
-                <button type="button" onClick={closeDialog} disabled={pending} className="min-h-10 rounded-lg border border-veyra-line bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:text-veyra-ink disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none">Cancel</button>
+                <button type="button" onClick={() => closeDialog()} disabled={pending} className="min-h-10 rounded-lg border border-veyra-line bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:text-veyra-ink disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none">Cancel</button>
                 <button type="submit" disabled={pending || !dirty} className="min-h-10 rounded-lg bg-veyra-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none">
-                  {pending ? "Saving…" : "Save changes"}
+                  {pending ? "Saving…" : "Save Changes"}
                 </button>
               </footer>
             )}

@@ -75,6 +75,15 @@ function categoryOptions(data: TransactionPageData | null, selected: string | nu
     : categories;
 }
 
+function PreservedFilters({ filters, names }: {
+  filters: TransactionFilters;
+  names: Array<"cycle" | "category" | "type" | "search">;
+}) {
+  return <>{names.map((name) => filters[name] && (
+    <input key={name} type="hidden" name={name} value={filters[name] ?? ""} />
+  ))}</>;
+}
+
 function FilterControls({ data, filters }: {
   data: TransactionPageData | null;
   filters: TransactionFilters;
@@ -84,15 +93,15 @@ function FilterControls({ data, filters }: {
       <label className="text-sm font-semibold text-slate-700">
         <span>Cycle</span>
         <select name="cycle" defaultValue={filters.cycle ?? ""} className={fieldClass}>
-          <option value="">All cycles</option>
-          <option value="current">Current cycle</option>
-          <option value="previous">Previous cycle</option>
+          <option value="">All Cycles</option>
+          <option value="current">Current Cycle</option>
+          <option value="previous">Previous Cycle</option>
         </select>
       </label>
       <label className="text-sm font-semibold text-slate-700">
         <span>Category</span>
         <select name="category" defaultValue={filters.category ?? ""} className={fieldClass}>
-          <option value="">All categories</option>
+          <option value="">All Categories</option>
           {categoryOptions(data, filters.category).map((category) => (
             <option key={category} value={category}>{category}</option>
           ))}
@@ -101,13 +110,13 @@ function FilterControls({ data, filters }: {
       <label className="text-sm font-semibold text-slate-700">
         <span>Type</span>
         <select name="type" defaultValue={filters.type ?? ""} className={fieldClass}>
-          <option value="">All types</option>
+          <option value="">All Types</option>
           <option value="expense">Expense</option>
           <option value="income">Income</option>
         </select>
       </label>
       <label className="text-sm font-semibold text-slate-700">
-        <span>Merchant search</span>
+        <span>Merchant Search</span>
         <input name="search" type="search" autoComplete="off" defaultValue={filters.search ?? ""} maxLength={200} className={fieldClass} />
       </label>
     </>
@@ -133,7 +142,7 @@ function ActiveFilterChips({ filters }: { filters: TransactionFilters }) {
           {filter.label}: {filter.value} <span aria-hidden="true" className="ml-2">×</span>
         </Link>
       ))}
-      <Link href={clearHref} className="text-sm font-semibold text-sky-700 hover:text-veyra-navy">Clear filters</Link>
+      <Link href={clearHref} className="text-sm font-semibold text-sky-700 hover:text-veyra-navy">Clear Filters</Link>
     </div>
   );
 }
@@ -152,13 +161,61 @@ function FilterBar({
       <form
         key={JSON.stringify([filters.cycle, filters.category, filters.type, filters.search])}
         onSubmit={onSubmit}
-        className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1.2fr_1fr_1.5fr_auto] xl:items-end"
+        className="hidden md:grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1.2fr_1fr_1.5fr_auto] xl:items-end"
       >
         <FilterControls data={data} filters={filters} />
         <button type="submit" className="h-10 rounded-lg bg-veyra-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 motion-reduce:transition-none">
-          Apply filters
+          Apply Filters
         </button>
       </form>
+      <div className="transaction-mobile-filters space-y-3 md:hidden">
+        <form
+          key={JSON.stringify([filters.cycle, filters.category, filters.type, filters.search])}
+          onSubmit={onSubmit}
+          className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2"
+        >
+          <PreservedFilters filters={filters} names={["cycle", "category", "type"]} />
+          <label className="min-w-0 text-sm font-semibold text-slate-700">
+            <span>Merchant Search</span>
+            <input name="search" type="search" autoComplete="off" defaultValue={filters.search ?? ""} maxLength={200} className={fieldClass} />
+          </label>
+          <button type="submit" className="h-10 rounded-lg bg-veyra-navy px-4 text-sm font-semibold text-white">Search</button>
+        </form>
+        <details className="rounded-lg border border-veyra-line bg-white">
+          <summary className="min-h-11 cursor-pointer px-3 py-2.5 text-sm font-semibold text-slate-700">Filters{activeFilters(filters).length ? ` (${activeFilters(filters).length})` : ""}</summary>
+          <form
+            key={JSON.stringify([filters.cycle, filters.category, filters.type, filters.search])}
+            onSubmit={onSubmit}
+            className="grid gap-3 border-t border-veyra-line p-3"
+          >
+            <PreservedFilters filters={filters} names={["search"]} />
+            <label className="text-sm font-semibold text-slate-700">
+              <span>Cycle</span>
+              <select name="cycle" defaultValue={filters.cycle ?? ""} className={fieldClass}>
+                <option value="">All Cycles</option>
+                <option value="current">Current Cycle</option>
+                <option value="previous">Previous Cycle</option>
+              </select>
+            </label>
+            <label className="text-sm font-semibold text-slate-700">
+              <span>Category</span>
+              <select name="category" defaultValue={filters.category ?? ""} className={fieldClass}>
+                <option value="">All Categories</option>
+                {categoryOptions(data, filters.category).map((category) => <option key={category} value={category}>{category}</option>)}
+              </select>
+            </label>
+            <label className="text-sm font-semibold text-slate-700">
+              <span>Type</span>
+              <select name="type" defaultValue={filters.type ?? ""} className={fieldClass}>
+                <option value="">All Types</option>
+                <option value="expense">Expense</option>
+                <option value="income">Income</option>
+              </select>
+            </label>
+            <button type="submit" className="h-10 rounded-lg bg-veyra-navy px-4 text-sm font-semibold text-white">Apply Filters</button>
+          </form>
+        </details>
+      </div>
       <ActiveFilterChips filters={filters} />
     </section>
   );
@@ -229,7 +286,7 @@ function TransactionTable({
   onEdit: (transaction: Transaction, button: HTMLButtonElement) => void;
 }) {
   return <>
-    <div className="overflow-x-auto rounded-veyra border border-veyra-line bg-white">
+    <div className="transactions-desktop-table hidden md:block overflow-x-auto rounded-veyra border border-veyra-line bg-white">
       <table className="w-full min-w-[760px] border-collapse text-left text-sm">
         <caption className="sr-only">Finalized transaction records</caption>
         <thead className="border-b border-veyra-line bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500"><tr>
@@ -252,6 +309,29 @@ function TransactionTable({
         ))}</tbody>
       </table>
     </div>
+    <ul className="transactions-mobile-list divide-y divide-veyra-line rounded-veyra border border-veyra-line bg-white md:hidden" aria-label="Finalized transaction records">
+      {data.items.map((transaction) => {
+        const dateLabel = transactionDate.format(new Date(transaction.transactionDate));
+        const merchantLabel = transaction.merchant ?? "Unknown merchant";
+        const signedAmount = transaction.type === "income" ? transaction.amount : -transaction.amount;
+        return (
+          <li key={transaction.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 p-4">
+            <strong className="min-w-0 break-words">{merchantLabel}</strong>
+            <strong className={`whitespace-nowrap text-right tabular-nums ${transaction.type === "income" ? "text-veyra-success" : "text-veyra-ink"}`}>
+              {transaction.type === "income" ? "+" : ""}{formatIdr(signedAmount)}
+            </strong>
+            <p className="min-w-0 break-words text-xs text-slate-600">
+              <time dateTime={transaction.transactionDate}>{dateLabel}</time>
+              {` · ${transaction.category ?? "Uncategorized"} · ${transaction.pocketName ?? "No pocket"}`}
+            </p>
+            <button type="button" aria-label={`Edit transaction ${merchantLabel} on ${dateLabel}`} onClick={(event) => onEdit(transaction, event.currentTarget)} className="min-h-10 rounded-lg border border-veyra-line px-3 text-sm font-semibold text-sky-700">
+              Edit
+            </button>
+            <span className="sr-only">{transaction.source} {transaction.type}</span>
+          </li>
+        );
+      })}
+    </ul>
     <Pagination data={data} filters={filters} />
   </>;
 }
@@ -287,6 +367,7 @@ export function TransactionsPage({ result, pockets, pocketsUnavailable, filters,
       type: formValue(formData, "type") as TransactionFilters["type"],
       search: formValue(formData, "search")
     };
+    if (!window.dispatchEvent(new Event("veyra:before-navigation", { cancelable: true }))) return;
     router.push(transactionHref(filters, changes));
   }
 
@@ -328,7 +409,7 @@ export function TransactionsPage({ result, pockets, pocketsUnavailable, filters,
 
         {unavailable ? (
           <section className="rounded-veyra border border-veyra-line bg-white p-8 text-center">
-            <h2 className="text-lg font-bold">Transactions couldn’t be loaded</h2>
+            <h2 className="text-lg font-bold">Transactions Couldn’t Be Loaded</h2>
             <p className="mt-1 text-sm text-slate-600">Your filters are still available. Try loading the records again.</p>
             <button type="button" onClick={() => router.refresh()} className="mt-4 rounded-lg bg-veyra-navy px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 motion-reduce:transition-none">Retry</button>
           </section>
@@ -336,13 +417,13 @@ export function TransactionsPage({ result, pockets, pocketsUnavailable, filters,
           <section className="rounded-veyra border border-veyra-line bg-white p-8 text-center">
             {filterList.length > 0 ? (
               <>
-                <h2 className="text-lg font-bold">No finalized transactions match these filters.</h2>
+                <h2 className="text-lg font-bold">No Finalized Transactions Match These Filters.</h2>
                 <p className="mt-1 text-sm text-slate-600">Clear the filters to return to all finalized records.</p>
-                <Link href={clearHref} className={`${secondaryLink} mt-4`}>Clear filters</Link>
+                <Link href={clearHref} className={`${secondaryLink} mt-4`}>Clear Filters</Link>
               </>
             ) : (
               <>
-                <h2 className="text-lg font-bold">No finalized transactions yet</h2>
+                <h2 className="text-lg font-bold">No Finalized Transactions Yet</h2>
                 <p className="mt-1 text-sm text-slate-600">Transactions recorded through Telegram or email will appear here.</p>
               </>
             )}

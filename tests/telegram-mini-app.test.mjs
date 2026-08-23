@@ -39,6 +39,14 @@ test("cleans up Telegram chrome and BackButton handlers", async () => {
   assert.match(bridge, /router\.replace\("\/dashboard"\)/);
 });
 
+test("guards Telegram Back navigation while the transaction editor is dirty", async () => {
+  const bridge = await readFile("src/components/telegram-mini-app.tsx", "utf8");
+
+  assert.match(bridge, /if \(!window\.dispatchEvent\(new Event\("veyra:before-navigation", \{ cancelable: true \}\)\)\) return;/);
+  assert.equal((bridge.match(/veyra:before-navigation/g) ?? []).length, 1);
+  assert.match(bridge, /router\.replace\("\/dashboard"\)/);
+});
+
 test("prevents Telegram vertical swipes from minimizing the app while tables scroll", async () => {
   const bridge = await readFile("src/components/telegram-mini-app.tsx", "utf8");
   assert.match(bridge, /disableVerticalSwipes\?\(\): void/);
@@ -96,6 +104,7 @@ test("adapts only the narrow Telegram shell for safe areas", async () => {
   assert.match(css, /--veyra-telegram-stable-height/);
   assert.match(css, /--veyra-telegram-safe-top/);
   assert.match(css, /--veyra-telegram-safe-bottom/);
+  assert.match(css, /html\[data-telegram-mini-app="true"\] \.app-mobile-header/);
   assert.match(css, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(css, /a\[aria-current="page"\]/);
   assert.match(pocketDialog, /pocket-dialog/);

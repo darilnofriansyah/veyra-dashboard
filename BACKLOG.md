@@ -7,6 +7,18 @@ records; checked or unchecked boxes there do not represent the current backlog.
 
 ## Current work
 
+### B-006 — Refresh responsive dashboard design
+
+- **Status:** Active; implementation planned on 2026-08-23.
+- **Evidence:** Design and implementation plan are recorded in
+  `docs/superpowers/specs/2026-08-23-veyra-responsive-dashboard-design.md` and
+  `docs/superpowers/plans/2026-08-23-veyra-responsive-dashboard.md`.
+- **Dependencies:** Authenticated controllable browser environment for final
+  responsive and Telegram QA.
+- **Complete when:** Automated tests pass and normal-browser plus Telegram checks
+  pass at the viewports listed in the design spec, including 200% text zoom,
+  keyboard focus, loading/error states, and no page-level horizontal overflow.
+
 ### B-005 — Deliver transaction list and corrections
 
 - **Status:** Active; implementation and automated cross-repository verification
@@ -23,8 +35,9 @@ records; checked or unchecked boxes there do not represent the current backlog.
   Veyra. Provide a browser test environment, authenticated fixture, and
   controllable Core responses for final interaction QA.
 - **Complete when:** Desktop/mobile layout, URL history and cursor navigation,
-  keyboard dialog behavior and focus, result states, reduced motion, horizontal
-  scrolling, and positive/negative credit-card delta notes pass in a real browser.
+  keyboard dialog behavior and focus, result states, reduced motion, responsive
+  transaction table/list switching, and positive/negative credit-card delta notes
+  pass in a real browser.
 
 ### B-003 — Verify live integrations, deployment, and weekly review scheduling
 

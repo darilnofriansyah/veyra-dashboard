@@ -25,7 +25,7 @@ function DefaultPocketButton({ pocketId, onResult }: { pocketId: string; onResul
     <form action={action}>
       <input type="hidden" name="pocketId" value={pocketId} />
       <button type="submit" disabled={pending} className={secondaryButton}>
-        {pending ? "Updating…" : "Make default"}
+        {pending ? "Updating…" : "Make Default"}
       </button>
     </form>
   );
@@ -37,21 +37,29 @@ function PocketList({ pockets, onOpen, onDefault }: {
   onDefault: (state: PocketActionState) => void;
 }) {
   return (
-    <ul className="space-y-3" aria-label="Pockets">
+    <ul className="pocket-list divide-y divide-veyra-line overflow-hidden rounded-veyra border border-veyra-line bg-white" aria-label="Pockets">
       {pockets.map((pocket) => (
-        <li key={pocket.id} className="flex flex-wrap items-center justify-between gap-4 rounded-veyra border border-veyra-line bg-white p-4">
+        <li key={pocket.id} className="grid min-w-0 gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="break-words text-base font-bold text-veyra-ink">{pocket.name}</h2>
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h2 className="min-w-0 break-words text-base font-bold text-veyra-ink">{pocket.name}</h2>
               {pocket.isDefault && <span className="rounded-full bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800">Default</span>}
             </div>
-            <p className="mt-1 text-sm text-slate-600">{pocket.amount === null ? "No budget set" : formatIdr(pocket.amount)}</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums text-veyra-ink">{pocket.amount === null ? "No Budget Set" : formatIdr(pocket.amount)}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="hidden gap-2 sm:flex">
             <button type="button" onClick={(event) => onOpen({ mode: "rename", pocket }, event.currentTarget)} className={secondaryButton}>Rename</button>
-            <button type="button" onClick={(event) => onOpen({ mode: "budget", pocket }, event.currentTarget)} className={secondaryButton}>Set budget</button>
+            <button type="button" onClick={(event) => onOpen({ mode: "budget", pocket }, event.currentTarget)} className={secondaryButton}>Set Budget</button>
             {!pocket.isDefault && <DefaultPocketButton pocketId={pocket.id} onResult={onDefault} />}
           </div>
+          <details className="pocket-mobile-actions rounded-lg border border-veyra-line bg-white sm:hidden">
+            <summary className="min-h-11 cursor-pointer px-3 py-2.5 text-sm font-semibold text-slate-700">More Actions</summary>
+            <div className="grid gap-2 border-t border-veyra-line p-2">
+              <button type="button" onClick={(event) => onOpen({ mode: "rename", pocket }, event.currentTarget)} className={secondaryButton}>Rename</button>
+              <button type="button" onClick={(event) => onOpen({ mode: "budget", pocket }, event.currentTarget)} className={secondaryButton}>Set Budget</button>
+              {!pocket.isDefault && <DefaultPocketButton pocketId={pocket.id} onResult={onDefault} />}
+            </div>
+          </details>
         </li>
       ))}
     </ul>
@@ -112,20 +120,20 @@ export function PocketsPage({ result, viewerName }: { result: LoadPocketsResult;
             <h1 className="mt-1 text-3xl font-bold tracking-[-0.04em] text-veyra-ink">Pockets</h1>
             <p className="mt-1 max-w-2xl text-sm text-slate-600">Organize the budgets Veyra uses for your transactions.</p>
           </div>
-          <button type="button" onClick={(event) => openCreate(event.currentTarget)} className="min-h-10 rounded-lg bg-veyra-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 motion-reduce:transition-none">Add pocket</button>
+          <button type="button" onClick={(event) => openCreate(event.currentTarget)} className="min-h-10 w-full rounded-lg bg-veyra-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 sm:w-auto motion-reduce:transition-none">Add Pocket</button>
         </header>
 
         {unavailable ? (
           <section className="rounded-veyra border border-veyra-line bg-white p-8 text-center">
-            <h2 className="text-lg font-bold">Pockets couldn’t be loaded</h2>
+            <h2 className="text-lg font-bold">Pockets Couldn’t Be Loaded</h2>
             <p className="mt-1 text-sm text-slate-600">Try loading your pockets again.</p>
             <button type="button" onClick={() => router.refresh()} className="mt-4 rounded-lg bg-veyra-navy px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 motion-reduce:transition-none">Retry</button>
           </section>
         ) : result.pockets.length === 0 ? (
           <section className="rounded-veyra border border-veyra-line bg-white p-8 text-center">
-            <h2 className="text-lg font-bold">No pockets yet</h2>
+            <h2 className="text-lg font-bold">No Pockets Yet</h2>
             <p className="mt-1 text-sm text-slate-600">Add a pocket to set a monthly budget.</p>
-            <button type="button" onClick={(event) => openCreate(event.currentTarget)} className="mt-4 rounded-lg bg-veyra-navy px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 motion-reduce:transition-none">Add pocket</button>
+            <button type="button" onClick={(event) => openCreate(event.currentTarget)} className="mt-4 w-full rounded-lg bg-veyra-navy px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 sm:w-auto motion-reduce:transition-none">Add Pocket</button>
           </section>
         ) : (
           <PocketList pockets={result.pockets} onOpen={openDialog} onDefault={handleDefault} />
