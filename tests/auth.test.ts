@@ -32,6 +32,12 @@ const config: AuthConfig = {
 
 const botToken = "123456789:test-bot-token";
 
+function tamperSignature(token: string) {
+  const signatureStart = token.lastIndexOf(".") + 1;
+  const replacement = token[signatureStart] === "a" ? "b" : "a";
+  return `${token.slice(0, signatureStart)}${replacement}${token.slice(signatureStart + 1)}`;
+}
+
 function miniAppInitData(
   overrides: Record<string, string> = {},
   token = botToken
@@ -183,10 +189,7 @@ test("rejects a tampered OIDC flow token", async () => {
     nonce: "nonce-value",
     codeVerifier: "code-verifier"
   });
-  const replacement = flowToken.endsWith("a") ? "b" : "a";
-  const tampered = `${flowToken.slice(0, -1)}${replacement}`;
-
-  assert.equal(await verifyFlowToken(tampered, config), null);
+  assert.equal(await verifyFlowToken(tamperSignature(flowToken), config), null);
 });
 
 test("accepts only an untampered Veyra session", async () => {
@@ -194,14 +197,11 @@ test("accepts only an untampered Veyra session", async () => {
     { telegramUserId: "976684739", name: "Kaito Ren" },
     config
   );
-  const replacement = token.endsWith("a") ? "b" : "a";
-  const tampered = `${token.slice(0, -1)}${replacement}`;
-
   assert.deepEqual(await verifySessionToken(token, config), {
     telegramUserId: "976684739",
     name: "Kaito Ren"
   });
-  assert.equal(await verifySessionToken(tampered, config), null);
+  assert.equal(await verifySessionToken(tamperSignature(token), config), null);
   assert.equal(await verifySessionToken(undefined, config), null);
 });
 

@@ -95,9 +95,13 @@ test("treats a tampered cookie as signed out and limits the matcher", async () =
     { telegramUserId: "976684739", name: "Kaito Ren" },
     authConfig
   );
-  const replacement = token.endsWith("a") ? "b" : "a";
+  const signatureStart = token.lastIndexOf(".") + 1;
+  const replacement = token[signatureStart] === "a" ? "b" : "a";
   const response = await proxy(
-    request("/dashboard", `${token.slice(0, -1)}${replacement}`)
+    request(
+      "/dashboard",
+      `${token.slice(0, signatureStart)}${replacement}${token.slice(signatureStart + 1)}`
+    )
   );
 
   assert.equal(response.status, 307);
