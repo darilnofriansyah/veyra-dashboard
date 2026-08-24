@@ -7,11 +7,11 @@ export async function proxy(request: NextRequest) {
     await verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value)
   );
 
-  if (path === "/" && signedIn) {
+  if (path === "/" && signedIn && !request.nextUrl.searchParams.has("tgWebAppStartParam")) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  if ((path === "/dashboard" || path === "/transactions" || path === "/pockets") && !signedIn) {
+  if ((path === "/dashboard" || path === "/transactions" || path === "/pockets" || path.startsWith("/pockets/")) && !signedIn) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
@@ -19,5 +19,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/dashboard", "/transactions", "/pockets"]
+  matcher: ["/", "/dashboard", "/transactions", "/pockets/:path*"]
 };

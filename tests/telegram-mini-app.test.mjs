@@ -20,7 +20,7 @@ test("loads Telegram runtime and mounts one client bridge", async () => {
   assert.doesNotMatch(bridge, /initDataUnsafe/);
   assert.match(bridge, /fetch\("\/auth\/telegram\/mini-app"/);
   assert.match(bridge, /body:\s*webApp\.initData/);
-  assert.match(bridge, /window\.location\.replace\("\/dashboard"\)/);
+  assert.match(bridge, /window\.location\.replace\(miniAppDestination\(/);
 });
 
 test("cleans up Telegram chrome and BackButton handlers", async () => {
@@ -35,7 +35,7 @@ test("cleans up Telegram chrome and BackButton handlers", async () => {
   assert.match(bridge, /removeEventListener\("resize"/);
   assert.match(bridge, /BackButton\.onClick/);
   assert.match(bridge, /BackButton\.offClick/);
-  assert.match(bridge, /pathname === "\/transactions" \|\| pathname === "\/pockets"/);
+  assert.match(bridge, /pathname === "\/transactions" \|\| pathname\.startsWith\("\/pockets"\)/);
   assert.match(bridge, /router\.replace\("\/dashboard"\)/);
 });
 

@@ -41,11 +41,12 @@ async function withAuthEnvironment(run: () => Promise<void>) {
   }
 }
 
-function miniAppInitData(authDate = Math.floor(Date.now() / 1000)) {
+function miniAppInitData(authDate = Math.floor(Date.now() / 1000), startParam?: string) {
   const values = new URLSearchParams({
     auth_date: String(authDate),
     user: JSON.stringify({ id: 976684739, first_name: "Kaito", last_name: "Ren" })
   });
+  if (startParam !== undefined) values.set("start_param", startParam);
   const checkString = [...values.entries()]
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([key, value]) => `${key}=${value}`)
@@ -124,7 +125,7 @@ test("creates the existing session from valid Mini App data", async () => {
       const sessionToken = response.cookies.get("veyra_session")?.value;
 
       assert.equal(response.status, 200);
-      assert.deepEqual(await response.json(), { status: "authorized" });
+      assert.deepEqual(await response.json(), { status: "authorized", startParam: null });
       assert.deepEqual(await verifySessionToken(sessionToken), {
         telegramUserId: "976684739",
         name: "Kaito Ren"
@@ -134,6 +135,25 @@ test("creates the existing session from valid Mini App data", async () => {
       assert.match(String(response.headers.get("set-cookie")), /Secure/i);
       assert.match(String(response.headers.get("set-cookie")), /Partitioned/i);
       assert.equal(response.headers.get("cache-control"), "no-store");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
+test("returns the signed Mini App start parameter only as navigation data", async () => {
+  await withAuthEnvironment(async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => Response.json({});
+    try {
+      const response = await miniAppLogin(miniAppRequest({
+        body: miniAppInitData(undefined, "pocket_42")
+      }));
+
+      assert.deepEqual(await response.json(), {
+        status: "authorized",
+        startParam: "pocket_42"
+      });
     } finally {
       globalThis.fetch = originalFetch;
     }

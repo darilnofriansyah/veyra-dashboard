@@ -1,5 +1,13 @@
 type TrendPoint = { date: string; amount: number };
 
+export function attentionPreview<T>(items: T[]) {
+  return {
+    items: items.slice(0, 3),
+    remaining: items.slice(3),
+    hasMore: items.length > 3
+  };
+}
+
 export function comparison(current: number, previous: number, lowerIsBetter: boolean) {
   if (!previous) return { text: "No comparison", className: "text-slate-500" };
 

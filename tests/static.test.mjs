@@ -108,7 +108,7 @@ test("composes the approved dashboard hierarchy", async () => {
     "Spending by Category",
     "Budget Status",
     "Recent Transactions",
-    "Latest Alert",
+    "Needs Attention",
     "Veyra"
   ]) {
     assert.match(dashboard, new RegExp(section));
@@ -151,7 +151,7 @@ test("prioritizes one responsive financial pulse", async () => {
 
   assert.equal([...dashboard.matchAll(/aria-label="Financial pulse"/g)].length, 1);
   assert.ok(dashboard.indexOf("Net Cashflow") < dashboard.indexOf("Total Income"));
-  assert.ok(dashboard.indexOf("Latest Alert") < dashboard.indexOf("Spending Trend"));
+  assert.ok(dashboard.indexOf("Needs Attention") < dashboard.indexOf("Financial pulse"));
   assert.match(dashboard, /overview-recent-mobile/);
   assert.match(dashboard, /overview-recent-desktop/);
   assert.doesNotMatch(categories, /#A64DFF|#6D79D8/);
@@ -170,7 +170,7 @@ test("keeps the loading pulse fluid and complete", async () => {
   }
 });
 
-test("uses raw budget status for rows, accessibility, and alert semantics", async () => {
+test("uses raw budget status and current attention semantics", async () => {
   const [dashboard, finance] = await Promise.all([
     readSource("src/components/overview-dashboard.tsx"),
     readSource("src/lib/finance.ts")
@@ -179,9 +179,13 @@ test("uses raw budget status for rows, accessibility, and alert semantics", asyn
   assert.match(dashboard, /budget\.status/);
   assert.match(dashboard, /statusLabel\[budget\.status\]/);
   assert.match(dashboard, /\{budget\.percent\}% · \{statusLabel\[budget\.status\]\}/);
-  assert.match(dashboard, /latestAlert\.status/);
-  assert.match(dashboard, /summary\?\.alert\s*\?\?\s*summary\?\.budgets\.find/);
-  assert.doesNotMatch(dashboard, /summary\.alert\.percent\s*>=\s*80/);
+  assert.match(dashboard, /data\.data\?\.current\.attention/);
+  assert.match(dashboard, /attentionPreview/);
+  assert.match(dashboard, /item\.projectedOverrun/);
+  assert.match(dashboard, /View all at-risk pockets/);
+  assert.match(dashboard, /attention\.remaining\.map/);
+  assert.match(dashboard, /href=\{`\/pockets\/\$\{item\.pocketId\}`\}/);
+  assert.doesNotMatch(dashboard, /dismiss|resolve.*attention/i);
   assert.doesNotMatch(finance, /right\.percent\s*-\s*left\.percent/);
 });
 
@@ -521,6 +525,19 @@ test("renders protected pocket management with truthful loading and navigation",
   assert.match(pocketsLink, /\bPockets\b/);
   assert.match(pocketsLink, /aria-current=\{activePage === "pockets" \? "page" : undefined\}/);
   assert.match(pocketsLink, /className=\{activePage === "pockets" \? activeLink : inactiveLink\}/);
+});
+
+test("renders an ownership-checked pocket detail without dismissing attention", async () => {
+  const page = await readSource("src/app/pockets/[pocketId]/page.tsx");
+
+  assert.match(page, /params: Promise<\{ pocketId: string \}>/);
+  assert.match(page, /verifySessionToken/);
+  assert.match(page, /loadPocketStatus\(session\.telegramUserId, pocketId, jakartaToday\(\)\)/);
+  assert.match(page, /if \(!status\) redirect\("\/dashboard"\)/);
+  assert.match(page, /formatIdr\(status\.spent_amount\)/);
+  assert.match(page, /formatIdr\(status\.budget_amount\)/);
+  assert.match(page, /status\.child_breakdown/);
+  assert.doesNotMatch(page, /dismiss|resolve|alert.*action/i);
 });
 
 test("offers accessible pocket dialogs and truthful pocket states", async () => {

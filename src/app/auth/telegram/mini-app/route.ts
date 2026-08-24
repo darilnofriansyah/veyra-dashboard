@@ -62,11 +62,10 @@ export async function POST(request: NextRequest) {
   }
 
   let identity;
+  let initData;
   try {
-    identity = verifyTelegramMiniAppInitData(
-      await readInitData(request),
-      botToken
-    );
+    initData = await readInitData(request);
+    identity = verifyTelegramMiniAppInitData(initData, botToken);
   } catch {
     return result("telegram_login", 401);
   }
@@ -84,7 +83,10 @@ export async function POST(request: NextRequest) {
   try {
     const sessionToken = await createSessionToken(identity, config);
     const response = NextResponse.json(
-      { status },
+      {
+        status,
+        startParam: new URLSearchParams(initData).get("start_param")
+      },
       { headers: { "cache-control": "no-store" } }
     );
     response.cookies.set(SESSION_COOKIE, sessionToken, {

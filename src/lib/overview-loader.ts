@@ -1,5 +1,6 @@
 import type {
   BudgetStatus,
+  BudgetAttention,
   BudgetSummary,
   CreditCardSummary,
   OverviewResponse,
@@ -32,6 +33,12 @@ function text(value: unknown, name: string): string {
     throw new Error(`Invalid ${name}`);
   }
   return value;
+}
+
+function positiveId(value: unknown, name: string): string {
+  const id = text(value, name);
+  if (!/^[1-9]\d*$/.test(id)) throw new Error(`Invalid ${name}`);
+  return id;
 }
 
 function finiteNumber(value: unknown, name: string): number {
@@ -129,6 +136,26 @@ function parseCreditCard(value: unknown, name: string): CreditCardSummary {
       item.statementBalance,
       `${name}.statementBalance`
     )
+  };
+}
+
+function parseAttention(value: unknown, name: string): BudgetAttention {
+  const item = object(value, name);
+  if (item.type !== "budget_forecast_overrun") throw new Error(`Invalid ${name}.type`);
+  const topDriver = object(item.topDriver, `${name}.topDriver`);
+  return {
+    type: item.type,
+    pocketId: positiveId(item.pocketId, `${name}.pocketId`),
+    pocketName: text(item.pocketName, `${name}.pocketName`),
+    limit: positiveRupiah(item.limit, `${name}.limit`),
+    spent: rupiah(item.spent, `${name}.spent`),
+    projectedSpend: rupiah(item.projectedSpend, `${name}.projectedSpend`),
+    projectedOverrun: positiveRupiah(item.projectedOverrun, `${name}.projectedOverrun`),
+    safeDailySpend: rupiah(item.safeDailySpend, `${name}.safeDailySpend`),
+    topDriver: {
+      category: text(topDriver.category, `${name}.topDriver.category`),
+      amount: rupiah(topDriver.amount, `${name}.topDriver.amount`)
+    }
   };
 }
 
@@ -239,7 +266,14 @@ function parseOverviewResponse(value: unknown): OverviewResponse {
       id: text(user.id, "user.id"),
       telegramUserId: text(user.telegramUserId, "user.telegramUserId")
     },
-    current,
+    current: {
+      ...current,
+      attention: list(
+        object(response.current, "current").attention,
+        "current.attention",
+        (item, index) => parseAttention(item, `current.attention[${index}]`)
+      )
+    },
     previous
   };
 }

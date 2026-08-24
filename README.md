@@ -231,7 +231,8 @@ loads Telegram's official Web Apps script at
 `POST /auth/telegram/mini-app`; the server validates it with
 `TELEGRAM_BOT_TOKEN`, rejects data older than five minutes, and asks Core to
 authorize the verified Telegram identity. On success it sets the existing
-HTTP-only Veyra session cookie and navigates to `/dashboard`. Invalid, denied,
+HTTP-only Veyra session cookie and navigates to `/dashboard`, or to the owned
+pocket requested by a validated `startapp=pocket_<budgetId>` launch. Invalid, denied,
 or unavailable launches do not create a session and show a truthful retry or
 access state.
 

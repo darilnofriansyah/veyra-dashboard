@@ -59,6 +59,17 @@ const period = (
     amount: 25_000,
     type: "expense" as const
   }],
+  ...(label === "current_cycle" ? { attention: [{
+    type: "budget_forecast_overrun" as const,
+    pocketId: "42",
+    pocketName: "Food",
+    limit: 1_500_000,
+    spent: 1_000_000,
+    projectedSpend: 1_800_000,
+    projectedOverrun: 300_000,
+    safeDailySpend: 25_000,
+    topDriver: { category: "Dining", amount: 600_000 }
+  }] } : {}),
   alert: null
 });
 
@@ -112,6 +123,28 @@ test("accepts the canonical Core API v1 credit-card contract for both cycles", a
   });
   assert.equal(loaded.data?.current.alert, null);
   assert.equal(loaded.data?.previous.alert, null);
+  assert.deepEqual(loaded.data?.current.attention, []);
+});
+
+test("parses current pocket attention from Core", async () => {
+  const loaded = await loadOverview(
+    "2026-07-25",
+    "976684739",
+    async () => Response.json(validResponse)
+  );
+
+  assert.equal(loaded.error, false);
+  assert.deepEqual(loaded.data?.current.attention, [{
+    type: "budget_forecast_overrun",
+    pocketId: "42",
+    pocketName: "Food",
+    limit: 1_500_000,
+    spent: 1_000_000,
+    projectedSpend: 1_800_000,
+    projectedOverrun: 300_000,
+    safeDailySpend: 25_000,
+    topDriver: { category: "Dining", amount: 600_000 }
+  }]);
 });
 
 test("rejects canonical contract drift in the previous credit-card summary", async () => {
@@ -267,6 +300,11 @@ test("rejects malformed overview responses", async (t) => {
         percent: 100,
         status: "over"
       };
+      return Response.json(body);
+    }],
+    ["attention pocket ID", () => {
+      const body = structuredClone(validResponse);
+      body.current.attention![0].pocketId = "../../transactions";
       return Response.json(body);
     }]
   ];

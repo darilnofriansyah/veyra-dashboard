@@ -6,6 +6,22 @@ export interface LoadPocketsResult {
   error: boolean;
 }
 
+interface PocketStatusLine {
+  budget_id: string;
+  category: string;
+  budget_amount: number;
+  spent_amount: number;
+  remaining_amount: number;
+  spent_percent: number;
+}
+
+export interface PocketStatus extends PocketStatusLine {
+  parent_budget_id: null;
+  child_breakdown: PocketStatusLine[];
+  cycle_start: string;
+  cycle_end: string;
+}
+
 type ActionResult = Exclude<PocketActionState, { status: "idle" }>;
 type JsonBody = Record<string, string | number>;
 
@@ -65,6 +81,49 @@ function parseBudget(value: unknown): void {
   ) throw new Error("Invalid budget");
 }
 
+function validDate(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value;
+}
+
+function parseStatusLine(value: unknown): PocketStatusLine {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid pocket status");
+  const item = value as Record<string, unknown>;
+  if (
+    typeof item.budget_id !== "string" || !validId(item.budget_id)
+    || typeof item.category !== "string" || !validName(item.category)
+    || typeof item.budget_amount !== "number" || !validAmount(item.budget_amount)
+    || typeof item.spent_amount !== "number" || !Number.isSafeInteger(item.spent_amount) || item.spent_amount < 0
+    || typeof item.remaining_amount !== "number" || !Number.isSafeInteger(item.remaining_amount)
+    || typeof item.spent_percent !== "number" || !Number.isFinite(item.spent_percent) || item.spent_percent < 0
+  ) throw new Error("Invalid pocket status");
+  return {
+    budget_id: item.budget_id,
+    category: item.category,
+    budget_amount: item.budget_amount,
+    spent_amount: item.spent_amount,
+    remaining_amount: item.remaining_amount,
+    spent_percent: item.spent_percent
+  };
+}
+
+function parsePocketStatus(value: unknown): PocketStatus {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid pocket status");
+  const item = value as Record<string, unknown>;
+  if (
+    item.parent_budget_id !== null || !Array.isArray(item.child_breakdown)
+    || !validDate(item.cycle_start) || !validDate(item.cycle_end) || item.cycle_start >= item.cycle_end
+  ) throw new Error("Invalid pocket status");
+  return {
+    ...parseStatusLine(item),
+    parent_budget_id: null,
+    child_breakdown: item.child_breakdown.map(parseStatusLine),
+    cycle_start: item.cycle_start,
+    cycle_end: item.cycle_end
+  };
+}
+
 const unavailable = (): ActionResult => ({ status: "unavailable" });
 const validation = (): ActionResult => ({ status: "validation", fieldErrors: {} });
 
@@ -79,6 +138,24 @@ export async function loadPockets(telegramUserId: string, fetchImpl: typeof fetc
     return { pockets: parsePockets(await response.json()), error: false };
   } catch {
     return { pockets: [], error: true };
+  }
+}
+
+export async function loadPocketStatus(
+  telegramUserId: string,
+  pocketId: string,
+  asOfDate: string,
+  fetchImpl: typeof fetch = fetch
+): Promise<PocketStatus | null> {
+  if (!validId(telegramUserId) || !validId(pocketId) || !validDate(asOfDate)) return null;
+  try {
+    const response = await fetchImpl(
+      `${coreUrl()}/api/veyra/budgets/status`,
+      requestOptions({ telegramUserId, pocketId, asOfDate })
+    );
+    return response.ok ? parsePocketStatus(await response.json()) : null;
+  } catch {
+    return null;
   }
 }
 

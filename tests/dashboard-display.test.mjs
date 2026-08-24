@@ -1,6 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { comparison, trendLayout } from "../src/lib/dashboard-display.ts";
+import { attentionPreview, comparison, trendLayout } from "../src/lib/dashboard-display.ts";
+
+test("attention preview shows three risks and reports remaining risks", () => {
+  const risks = [{ pocketId: "1" }, { pocketId: "2" }, { pocketId: "3" }, { pocketId: "4" }];
+
+  assert.deepEqual(attentionPreview(risks), {
+    items: risks.slice(0, 3),
+    remaining: risks.slice(3),
+    hasMore: true
+  });
+  assert.deepEqual(attentionPreview(risks.slice(0, 2)), {
+    items: risks.slice(0, 2),
+    remaining: [],
+    hasMore: false
+  });
+});
 
 test("comparison direction and status use the raw delta while percentage stays rounded", () => {
   assert.deepEqual(comparison(100, 100, false), {

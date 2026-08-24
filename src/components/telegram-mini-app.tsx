@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { miniAppDestination } from "@/lib/mini-app-navigation";
 
 type TelegramEvent =
   | "themeChanged"
@@ -104,7 +105,7 @@ export function TelegramMiniApp() {
       if (!window.dispatchEvent(new Event("veyra:before-navigation", { cancelable: true }))) return;
       router.replace("/dashboard");
     };
-    const secondary = pathname === "/transactions" || pathname === "/pockets";
+    const secondary = pathname === "/transactions" || pathname.startsWith("/pockets");
     const events: TelegramEvent[] = ["themeChanged", "viewportChanged"];
     if (webApp.isVersionAtLeast?.("8.0")) {
       events.push("safeAreaChanged", "contentSafeAreaChanged");
@@ -152,7 +153,7 @@ export function TelegramMiniApp() {
         if (response.ok) {
           const payload: unknown = await response.json();
           if (typeof payload === "object" && payload !== null && "status" in payload && payload.status === "authorized") {
-            window.location.replace("/dashboard");
+            window.location.replace(miniAppDestination("startParam" in payload ? payload.startParam : null));
             return;
           }
         }
@@ -192,7 +193,7 @@ export function TelegramMiniApp() {
       <div className={cardClass}>
         {brandMark}
         <p className="text-sm font-semibold">{failureCopy[authState]}</p>
-        <button type="button" className="mt-6 min-h-11 rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 motion-reduce:transition-none" onClick={() => { setAuthState("authenticating"); setRetry((value) => value + 1); }}>Retry</button>
+        <button type="button" className="mt-6 min-h-11 rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 active:scale-[0.98] motion-reduce:transition-none" onClick={() => { setAuthState("authenticating"); setRetry((value) => value + 1); }}>Retry</button>
       </div>
     </section>
   );

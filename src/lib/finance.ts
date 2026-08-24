@@ -16,6 +16,18 @@ export interface BudgetSummary {
   status: BudgetStatus;
 }
 
+export interface BudgetAttention {
+  type: "budget_forecast_overrun";
+  pocketId: string;
+  pocketName: string;
+  limit: number;
+  spent: number;
+  projectedSpend: number;
+  projectedOverrun: number;
+  safeDailySpend: number;
+  topDriver: { category: string; amount: number };
+}
+
 export interface CreditCardSummary {
   limit: number;
   used: number;
@@ -58,7 +70,7 @@ export interface OverviewResponse {
     id: string;
     telegramUserId: string;
   };
-  current: PeriodOverview;
+  current: PeriodOverview & { attention: BudgetAttention[] };
   previous: PeriodOverview;
 }
 

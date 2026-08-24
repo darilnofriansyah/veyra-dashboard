@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createPocket,
+  loadPocketStatus,
   loadPockets,
   renamePocket,
   setDefaultPocket,
@@ -18,6 +19,25 @@ const validBudget = {
   parent_category: null,
   period_type: "monthly",
   action: "created"
+};
+const validPocketStatus = {
+  budget_id: "42",
+  category: "Daily spending",
+  parent_budget_id: null,
+  budget_amount: 500_000,
+  spent_amount: 325_000,
+  remaining_amount: 175_000,
+  spent_percent: 65,
+  child_breakdown: [{
+    budget_id: "43",
+    category: "Dining",
+    budget_amount: 200_000,
+    spent_amount: 150_000,
+    remaining_amount: 50_000,
+    spent_percent: 75
+  }],
+  cycle_start: "2026-08-15",
+  cycle_end: "2026-09-15"
 };
 const environment = process.env as Record<string, string | undefined>;
 
@@ -52,6 +72,36 @@ test("lists pockets with the user ID and accepts a created response", async () =
     assert.deepEqual(calls[0]?.init?.headers, { "content-type": "application/json" });
     assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), { userId: "976684739" });
   });
+});
+
+test("loads one owned pocket status with authenticated identity and pocket ID", async () => {
+  const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+  const result = await loadPocketStatus("976684739", "42", "2026-08-24", async (input, init) => {
+    calls.push({ input, init });
+    return Response.json(validPocketStatus);
+  });
+
+  assert.deepEqual(result, validPocketStatus);
+  assert.equal(String(calls[0]?.input), "http://core-api:3000/api/veyra/budgets/status");
+  assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
+    telegramUserId: "976684739",
+    pocketId: "42",
+    asOfDate: "2026-08-24"
+  });
+});
+
+test("rejects invalid or inaccessible pocket status requests safely", async () => {
+  let calls = 0;
+  const fetchImpl: typeof fetch = async () => {
+    calls += 1;
+    return new Response(null, { status: 404 });
+  };
+
+  assert.equal(await loadPocketStatus("976684739", "0", "2026-08-24", fetchImpl), null);
+  assert.equal(await loadPocketStatus("976684739", "42", "invalid", fetchImpl), null);
+  assert.equal(calls, 0);
+  assert.equal(await loadPocketStatus("976684739", "42", "2026-08-24", fetchImpl), null);
+  assert.equal(calls, 1);
 });
 
 test("sends Core credentials and a five-second timeout", async () => {

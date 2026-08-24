@@ -1,20 +1,21 @@
 "use client";
 
-import { CheckCircle, CreditCard, Sparkle, Warning } from "@phosphor-icons/react";
+import { CreditCard, Sparkle, Warning } from "@phosphor-icons/react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { CategoryBreakdown } from "@/components/category-breakdown";
 import { SpendingTrend } from "@/components/spending-trend";
-import { comparison } from "@/lib/dashboard-display";
-import { creditUsagePercent, formatIdr, type BudgetStatus, type Period } from "@/lib/finance";
+import { attentionPreview, comparison } from "@/lib/dashboard-display";
+import { creditUsagePercent, formatIdr, type BudgetAttention, type BudgetStatus, type Period } from "@/lib/finance";
 import type { OverviewLoaderResult } from "@/lib/overview-loader";
 
 const panel = "min-w-0 rounded-veyra border border-veyra-line bg-white p-3";
 const label = "text-xs font-medium text-slate-500";
 const value = "mt-1 block text-xl font-bold tracking-[-0.03em] text-veyra-ink";
-const retry = "mt-3 inline-block rounded-lg border border-veyra-line px-3 py-2 text-xs font-semibold text-sky-700 transition-colors hover:border-veyra-cyan motion-reduce:transition-none";
+const retry = "mt-3 inline-block rounded-lg border border-veyra-line px-3 py-2 text-xs font-semibold text-sky-700 transition-colors hover:border-veyra-cyan focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 active:scale-[0.98] motion-reduce:transition-none";
 const transactionDate = new Intl.DateTimeFormat("en", { day: "numeric", month: "short", timeZone: "UTC" });
 const statusLabel: Record<BudgetStatus, string> = { "on-track": "On track", warning: "Warning", over: "Over budget" };
 
@@ -41,6 +42,26 @@ function Unavailable({ children }: { children: string }) {
   );
 }
 
+function AttentionItem({ item }: { item: BudgetAttention }) {
+  return (
+    <li className="grid min-w-0 gap-4 py-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_auto] md:items-center">
+      <div className="min-w-0">
+        <h3 className="break-words font-bold text-veyra-ink">{item.pocketName}</h3>
+        <p className="mt-1 break-words text-sm text-slate-600">Top driver: {item.topDriver.category} · {formatIdr(item.topDriver.amount)}</p>
+      </div>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-4">
+        <div><dt className={label}>Current</dt><dd className="mt-1 font-semibold tabular-nums">{formatIdr(item.spent)} / {formatIdr(item.limit)}</dd></div>
+        <div><dt className={label}>Projected</dt><dd className="mt-1 font-semibold tabular-nums">{formatIdr(item.projectedSpend)}</dd></div>
+        <div><dt className={label}>Overrun</dt><dd className="mt-1 font-semibold tabular-nums text-veyra-danger">{formatIdr(item.projectedOverrun)}</dd></div>
+        <div><dt className={label}>Safe Daily Spend</dt><dd className="mt-1 font-semibold tabular-nums">{formatIdr(item.safeDailySpend)}</dd></div>
+      </dl>
+      <Link href={`/pockets/${item.pocketId}`} className="inline-flex min-h-10 items-center justify-center rounded-lg bg-veyra-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 active:scale-[0.98] motion-reduce:transition-none">
+        View Pocket
+      </Link>
+    </li>
+  );
+}
+
 export function OverviewDashboard({
   data,
   viewerName
@@ -56,10 +77,7 @@ export function OverviewDashboard({
   const cycleLabel = summary
     ? formatCycle(summary.period.start, summary.period.end)
     : "Cycle unavailable";
-  // ponytail: visible-budget fallback until Core API returns an all-budget alert.
-  const latestAlert = summary?.alert
-    ?? summary?.budgets.find((budget) => budget.status !== "on-track")
-    ?? null;
+  const attention = attentionPreview(period === "current" ? data.data?.current.attention ?? [] : []);
   const highestCategory = summary?.categories[0] ?? null;
   const insight = highestCategory
     ? `${highestCategory.category} ${period === "current" ? "is" : "was"} your largest expense at ${highestCategory.percent}% of spending.`
@@ -90,7 +108,7 @@ export function OverviewDashboard({
         <header className="mb-2.5 flex flex-wrap items-start justify-between gap-2.5">
           <div><h1 className="text-2xl font-bold">Overview</h1><p className="mt-1 text-sm text-slate-500">Here’s your financial summary.</p></div>
           <label><span className="sr-only">Period</span>
-            <select value={period} onChange={(event) => setPeriod(event.target.value as Period)} className="block rounded-lg border border-veyra-line bg-white px-3 py-2 text-sm text-veyra-ink transition-colors motion-reduce:transition-none">
+            <select value={period} onChange={(event) => setPeriod(event.target.value as Period)} className="block rounded-lg border border-veyra-line bg-white px-3 py-2 text-sm text-veyra-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 motion-reduce:transition-none">
               <option value="current">Current Cycle</option>
               <option value="previous">Previous Cycle</option>
             </select>
@@ -104,6 +122,30 @@ export function OverviewDashboard({
           </section>
         ) : (
           <>
+            {attention.items.length > 0 && (
+              <section aria-labelledby="attention-title" className={`${panel} mb-2.5 border-t-[3px] border-t-veyra-warning p-4`}>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">Current Cycle</p>
+                  <h2 id="attention-title" className="mt-1 flex items-center gap-2 text-lg font-bold tracking-[-0.02em]">
+                    <Warning size={18} weight="duotone" aria-hidden="true" />
+                    Needs Attention
+                  </h2>
+                </div>
+                <ul className="mt-4 divide-y divide-veyra-line border-y border-veyra-line">
+                  {attention.items.map((item) => <AttentionItem key={item.pocketId} item={item} />)}
+                </ul>
+                {attention.hasMore && (
+                  <details className="mt-2">
+                    <summary className="flex min-h-10 cursor-pointer items-center rounded-lg px-2 text-sm font-semibold text-sky-700 hover:text-sky-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 active:scale-[0.98]">
+                      View all at-risk pockets
+                    </summary>
+                    <ul className="divide-y divide-veyra-line border-y border-veyra-line">
+                      {attention.remaining.map((item) => <AttentionItem key={item.pocketId} item={item} />)}
+                    </ul>
+                  </details>
+                )}
+              </section>
+            )}
             <section aria-label="Financial pulse" className={`${panel} grid gap-5 p-4 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]`}>
               <div className="min-w-0">
                 <span className={label}>Net Cashflow</span>
@@ -143,18 +185,6 @@ export function OverviewDashboard({
                 <progress max="100" value={Math.min(creditUsage, 100)} aria-label={`Credit card used: ${formatIdr(summary.creditCard.used)} of ${formatIdr(summary.creditCard.limit)}, ${creditUsage}%`} className="budget-progress mt-3 h-1.5 w-full">{creditUsage}%</progress>
                 <span className="mt-1.5 block text-xs text-slate-500">{creditUsage}% of {formatIdr(summary.creditCard.limit)} limit</span>
               </section>
-            </section>
-
-            <section className="mt-2.5">
-              <article className={`${panel} border-t-[3px] ${latestAlert ? "border-t-veyra-warning" : "border-t-veyra-success"}`}>
-                <h2 className="mb-3 flex items-center gap-2 text-sm font-bold">
-                  {latestAlert
-                    ? <Warning size={16} weight="duotone" aria-hidden="true" />
-                    : <CheckCircle size={16} weight="duotone" aria-hidden="true" className="text-veyra-success" />}
-                  Latest Alert
-                </h2>
-                <p className="text-sm">{latestAlert ? `${latestAlert.category} budget ${latestAlert.status === "over" ? "is over its limit at" : "is at"} ${latestAlert.percent}%.` : "Tracked budgets are on course."}</p>
-              </article>
             </section>
 
             <section className="mt-2.5 grid gap-2.5 xl:grid-cols-[1.6fr_1fr]">

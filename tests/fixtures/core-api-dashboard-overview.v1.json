@@ -59,7 +59,8 @@
       "limit": 12000000,
       "used": 3250000,
       "statementBalance": 0
-    }
+    },
+    "attention": []
   },
   "previous": {
     "period": {

@@ -65,6 +65,19 @@ test("allows signed-in pocket requests", async () => {
   assert.equal(response.headers.get("location"), null);
 });
 
+test("protects pocket detail routes", async () => {
+  const signedOut = await proxy(request("/pockets/42"));
+  const token = await createSessionToken(
+    { telegramUserId: "976684739", name: "Kaito Ren" },
+    authConfig
+  );
+  const signedIn = await proxy(request("/pockets/42", token));
+
+  assert.equal(signedOut.status, 307);
+  assert.equal(signedOut.headers.get("location"), "http://localhost/");
+  assert.equal(signedIn.status, 200);
+});
+
 test("redirects a signed-in login request to the dashboard", async () => {
   const token = await createSessionToken(
     { telegramUserId: "976684739", name: "Kaito Ren" },
@@ -74,6 +87,17 @@ test("redirects a signed-in login request to the dashboard", async () => {
 
   assert.equal(response.status, 307);
   assert.equal(response.headers.get("location"), "http://localhost/dashboard");
+});
+
+test("lets signed-in Telegram start launches revalidate initData before navigation", async () => {
+  const token = await createSessionToken(
+    { telegramUserId: "976684739", name: "Kaito Ren" },
+    authConfig
+  );
+  const response = await proxy(request("/?tgWebAppStartParam=pocket_42", token));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("location"), null);
 });
 
 test("allows the expected route for each session state", async () => {
@@ -110,6 +134,6 @@ test("treats a tampered cookie as signed out and limits the matcher", async () =
     "/",
     "/dashboard",
     "/transactions",
-    "/pockets"
+    "/pockets/:path*"
   ]);
 });
