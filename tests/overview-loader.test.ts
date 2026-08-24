@@ -250,6 +250,20 @@ test("accepts overview responses while the Core API alert field is pending", asy
   assert.equal(loaded.data?.previous.alert, null);
 });
 
+test("accepts overview responses while the Core API attention field is pending", async () => {
+  const body = structuredClone(validResponse) as Record<string, unknown>;
+  delete (body.current as Record<string, unknown>).attention;
+
+  const loaded = await loadOverview(
+    "2026-07-25",
+    "976684739",
+    async () => Response.json(body, { status: 201 })
+  );
+
+  assert.equal(loaded.error, false);
+  assert.deepEqual(loaded.data?.current.attention, []);
+});
+
 test("rejects malformed overview responses", async (t) => {
   const malformedCases: Array<[string, () => Response]> = [
     ["date", () => {

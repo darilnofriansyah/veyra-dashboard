@@ -268,11 +268,13 @@ function parseOverviewResponse(value: unknown): OverviewResponse {
     },
     current: {
       ...current,
-      attention: list(
-        object(response.current, "current").attention,
-        "current.attention",
-        (item, index) => parseAttention(item, `current.attention[${index}]`)
-      )
+      attention: object(response.current, "current").attention === undefined
+        ? []
+        : list(
+          object(response.current, "current").attention,
+          "current.attention",
+          (item, index) => parseAttention(item, `current.attention[${index}]`)
+        )
     },
     previous
   };
