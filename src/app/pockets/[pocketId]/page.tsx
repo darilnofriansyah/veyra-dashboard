@@ -1,4 +1,4 @@
-import { ArrowLeft } from "@phosphor-icons/react";
+import { ArrowLeft } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
