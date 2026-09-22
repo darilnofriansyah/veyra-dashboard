@@ -3,10 +3,10 @@
 Veyra is a financial dashboard and transaction-correction interface. A
 signed-in user can inspect current and previous billing cycles, cash-flow
 totals, spending trends, categories, budgets, recent transactions, alerts, a
-combined credit-card summary, and finalized transaction records. Users can
-correct an older transaction's amount, merchant, or category; Telegram and
-email ingestion remain the only creation paths. Veyra renders and corrects
-records through the Core API.
+combined credit-card summary, finalized transaction records, and credit-card
+installment schedules. Users can correct an older transaction's amount,
+merchant, or category; Telegram and email ingestion remain the only creation
+paths. Veyra renders and corrects records through the Core API.
 
 Current work is tracked in [`BACKLOG.md`](BACKLOG.md). Historical implementation
 plans are supporting records, not an active task list.
@@ -153,18 +153,20 @@ dashboard displays a retry control and does not expose the upstream response.
 
 ### Transactions and corrections
 
-The protected `/transactions` page queries only Core-confirmed income and
-expense records. It uses one uncached, server-side request to:
+The protected `/transactions` page uses one uncached, server-side request for
+Core-confirmed transaction and installment-schedule entries:
 
 ```text
-POST <NEXUS_CORE_URL>/api/veyra/transactions/query
+POST <NEXUS_CORE_URL>/api/veyra/transactions/timeline/query
 ```
 
 The query sends the verified Telegram user ID from the server-side session,
 Jakarta calendar date, fixed `Asia/Jakarta` timezone, and validated visible
-cycle, category, type, merchant-search, and opaque cursor filters. Browser
-input never controls identity, and neither Core URL nor API key reaches a
-client component.
+cycle, native `YYYY-MM` month, category, type, merchant-search, and opaque
+cursor filters. Month and cycle filters are mutually exclusive. Browser input
+never controls identity, and neither Core URL nor API key reaches a client
+component. Veyra validates the combined response but does not calculate
+installment interest, dates, or budget values.
 
 Saving a transaction correction sends a separate, independently authenticated
 server action request to:
@@ -184,8 +186,39 @@ applies its signed delta to cycle `credit_used`. Merchant and category edits do
 not affect credit usage, and transaction editing never changes the credit limit
 or statement balance.
 
-Deploy the Core transaction query and PATCH endpoints before deploying this
-Veyra page. Veyra validates both endpoint responses before rendering them.
+### Credit-card installment plans
+
+An eligible Core-recognized credit-card expense with no existing plan can be
+previewed and created from `/transactions`. The server actions call:
+
+```text
+POST <NEXUS_CORE_URL>/api/veyra/transactions/:transactionId/installments/preview
+POST <NEXUS_CORE_URL>/api/veyra/transactions/:transactionId/installments
+```
+
+They derive the Telegram identity from the signed session and submit only the
+validated terms and observed `updatedAt` version. Core remains authoritative for
+eligibility, installment calculations, and conflict detection. Once planned,
+the purchase amount is locked while its merchant, category, and pocket details
+remain editable. A timeline page subtotal uses Core's `budgetAmount`, so a
+scheduled installment's principal is not counted a second time.
+
+Schedule display does not post interest automatically. A production operator
+must deploy the Core migration and endpoints, then configure a secret-backed
+scheduled HTTP request to:
+
+```text
+POST <NEXUS_CORE_URL>/api/veyra/installments/post-due-interest
+```
+
+Until that job is configured and verified, schedule rows can be displayed but
+due interest remains pending. This repository does not apply the Core migration,
+deploy either service, or configure the scheduler. Roll out in order: apply the
+additive Core migration, deploy Core endpoints, deploy Veyra, then configure
+the scheduled posting request.
+
+Deploy the Core timeline, installment, and PATCH endpoints before deploying
+this Veyra page. Veyra validates each endpoint response before rendering it.
 
 ### Pockets and monthly budgets
 

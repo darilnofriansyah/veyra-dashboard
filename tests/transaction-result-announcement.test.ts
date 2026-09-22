@@ -7,6 +7,7 @@ import {
 
 const baseFilters = {
   cycle: null,
+  month: null,
   category: null,
   type: null,
   search: null,
@@ -25,15 +26,29 @@ test("announces every transaction result state without reading table contents", 
   );
   assert.equal(
     transactionResultAnnouncement({ data: { items: [] }, error: false }, true),
-    "No finalized transactions match these filters."
+    "No transactions or installment entries match these filters."
   );
   assert.equal(
     transactionResultAnnouncement({ data: { items: [] }, error: false }, false),
-    "No finalized transactions yet."
+    "No transactions or installment entries yet."
   );
   assert.equal(
     transactionResultAnnouncement({ data: null, error: true }, true),
     "Transactions couldn’t be loaded."
+  );
+});
+
+test("announces mixed and scheduled-only timeline entries truthfully", () => {
+  assert.equal(
+    transactionResultAnnouncement({
+      data: { items: [{ kind: "transaction" }, { kind: "installment" }, { kind: "installment" }] },
+      error: false
+    }, false),
+    "1 transaction and 2 installment entries loaded on this page."
+  );
+  assert.equal(
+    transactionResultAnnouncement({ data: { items: [{ kind: "installment" }] }, error: false }, false),
+    "1 installment entry loaded on this page."
   );
 });
 
@@ -72,4 +87,18 @@ test("synchronously keys filter and cursor transitions while speaking only curre
   );
   assert.match(current.message, /^2 transactions loaded on this page\. Filters: category Groceries\./);
   assert.doesNotMatch(current.message, /50|Dining/);
+});
+
+test("includes month in filter announcement text and navigation key", () => {
+  const september = transactionResultAnnouncementModel(
+    { data: { items: [] }, error: false },
+    { ...baseFilters, month: "2026-09" }
+  );
+  const october = transactionResultAnnouncementModel(
+    { data: { items: [] }, error: false },
+    { ...baseFilters, month: "2026-10" }
+  );
+
+  assert.notEqual(september.key, october.key);
+  assert.match(september.message, /month 2026-09/);
 });

@@ -8,6 +8,7 @@ interface TransactionResult {
 function navigationSignature(filters: TransactionFilters): string {
   return JSON.stringify([
     filters.cycle,
+    filters.month,
     filters.category,
     filters.type,
     filters.search,
@@ -26,6 +27,7 @@ function filterDescription(filters: TransactionFilters): {
 } {
   const labels: string[] = [];
   if (filters.cycle) labels.push(filters.cycle === "current" ? "current cycle" : "previous cycle");
+  if (filters.month) labels.push(`month ${filters.month}`);
   if (filters.category) labels.push(`category ${conciseValue(filters.category)}`);
   if (filters.type) labels.push(filters.type);
   if (filters.search) labels.push(`merchant search ${conciseValue(filters.search)}`);
@@ -47,14 +49,23 @@ export function transactionResultAnnouncement(
 ): string {
   if (result.error || !result.data) return "Transactions couldn’t be loaded.";
 
-  const count = result.data.items.length;
-  if (count > 0) {
-    return `${count} ${count === 1 ? "transaction" : "transactions"} loaded on this page.`;
+  const installmentCount = result.data.items.filter((item) => (
+    typeof item === "object" && item !== null && (item as { kind?: unknown }).kind === "installment"
+  )).length;
+  const transactionCount = result.data.items.length - installmentCount;
+  if (transactionCount > 0 && installmentCount > 0) {
+    return `${transactionCount} ${transactionCount === 1 ? "transaction" : "transactions"} and ${installmentCount} installment ${installmentCount === 1 ? "entry" : "entries"} loaded on this page.`;
+  }
+  if (transactionCount > 0) {
+    return `${transactionCount} ${transactionCount === 1 ? "transaction" : "transactions"} loaded on this page.`;
+  }
+  if (installmentCount > 0) {
+    return `${installmentCount} installment ${installmentCount === 1 ? "entry" : "entries"} loaded on this page.`;
   }
 
   return hasActiveFilters
-    ? "No finalized transactions match these filters."
-    : "No finalized transactions yet.";
+    ? "No transactions or installment entries match these filters."
+    : "No transactions or installment entries yet.";
 }
 
 export function transactionResultAnnouncementModel(

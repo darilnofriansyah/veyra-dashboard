@@ -2,20 +2,21 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState, type FormEvent } from "react";
+import { useCallback, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { AppShell } from "@/components/app-shell";
+import { InstallmentDialog } from "@/components/installment-dialog";
 import { TransactionEditDialog } from "@/components/transaction-edit-dialog";
 import { formatIdr } from "@/lib/finance";
-import type { Pocket, Transaction, TransactionPageData } from "@/lib/transaction-contract";
+import type { Pocket, Transaction } from "@/lib/transaction-contract";
 import {
   transactionHref,
   type TransactionFilters
 } from "@/lib/transaction-filters";
-import type { LoadTransactionsResult } from "@/lib/transactions-api";
+import type { TimelineEntry, TimelinePage } from "@/lib/transaction-timeline-contract";
 import { transactionResultAnnouncementModel } from "@/lib/transaction-result-announcement";
 
 interface TransactionsPageProps {
-  result: LoadTransactionsResult;
+  result: { data: TimelinePage | null; error: boolean };
   pockets: Pocket[];
   pocketsUnavailable: boolean;
   filters: TransactionFilters;
@@ -23,7 +24,7 @@ interface TransactionsPageProps {
 }
 
 interface ActiveFilter {
-  key: "cycle" | "category" | "type" | "search";
+  key: "cycle" | "month" | "category" | "type" | "search";
   label: string;
   value: string;
 }
@@ -37,10 +38,48 @@ const transactionDate = new Intl.DateTimeFormat("en", {
 
 const fieldClass = "mt-1 h-10 w-full rounded-lg border border-veyra-line bg-white px-3 text-sm text-veyra-ink";
 const secondaryLink = "inline-flex min-h-10 items-center justify-center rounded-lg border border-veyra-line bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:text-veyra-ink motion-reduce:transition-none";
+const scheduleMonths = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+];
+
+type TimelineTransactionEntry = Extract<TimelineEntry, { kind: "transaction" }>;
+type TimelineInstallmentEntry = Extract<TimelineEntry, { kind: "installment" }>;
+
+function dateOnlyLabel(value: string): string {
+  const [year, month, day] = value.split("-");
+  return `${Number(day)} ${scheduleMonths[Number(month) - 1] ?? month} ${year}`;
+}
+
+function purchaseContextHref(
+  filters: TransactionFilters,
+  merchant: string
+): string {
+  return transactionHref(filters, {
+    cycle: null,
+    month: null,
+    type: "expense",
+    search: merchant,
+    category: null,
+    cursor: null,
+    direction: null
+  });
+}
 
 function formValue(formData: FormData, name: string): string | null {
   const value = formData.get(name);
   return typeof value === "string" && value ? value : null;
+}
+
+function clearPeriodSibling(
+  event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  siblingName: "cycle" | "month"
+): void {
+  if (!event.currentTarget.value) return;
+  const sibling = event.currentTarget.form?.elements.namedItem(siblingName);
+  if (sibling instanceof HTMLInputElement || sibling instanceof HTMLSelectElement) {
+    sibling.value = "";
+  }
 }
 
 function activeFilters(filters: TransactionFilters): ActiveFilter[] {
@@ -51,6 +90,9 @@ function activeFilters(filters: TransactionFilters): ActiveFilter[] {
       label: "Cycle",
       value: filters.cycle === "current" ? "Current cycle" : "Previous cycle"
     });
+  }
+  if (filters.month) {
+    active.push({ key: "month", label: "Month", value: filters.month });
   }
   if (filters.category) {
     active.push({ key: "category", label: "Category", value: filters.category });
@@ -68,7 +110,7 @@ function activeFilters(filters: TransactionFilters): ActiveFilter[] {
   return active;
 }
 
-function categoryOptions(data: TransactionPageData | null, selected: string | null): string[] {
+function categoryOptions(data: Pick<TimelinePage, "categories"> | null, selected: string | null): string[] {
   const categories = data?.categories ?? [];
   return selected && !categories.includes(selected)
     ? [selected, ...categories]
@@ -77,7 +119,7 @@ function categoryOptions(data: TransactionPageData | null, selected: string | nu
 
 function PreservedFilters({ filters, names }: {
   filters: TransactionFilters;
-  names: Array<"cycle" | "category" | "type" | "search">;
+  names: Array<"cycle" | "month" | "category" | "type" | "search">;
 }) {
   return <>{names.map((name) => filters[name] && (
     <input key={name} type="hidden" name={name} value={filters[name] ?? ""} />
@@ -85,18 +127,22 @@ function PreservedFilters({ filters, names }: {
 }
 
 function FilterControls({ data, filters }: {
-  data: TransactionPageData | null;
+  data: Pick<TimelinePage, "categories"> | null;
   filters: TransactionFilters;
 }) {
   return (
     <>
       <label className="text-sm font-semibold text-slate-700">
         <span>Cycle</span>
-        <select name="cycle" defaultValue={filters.cycle ?? ""} className={fieldClass}>
+        <select name="cycle" defaultValue={filters.cycle ?? ""} onChange={(event) => clearPeriodSibling(event, "month")} className={fieldClass}>
           <option value="">All Cycles</option>
           <option value="current">Current Cycle</option>
           <option value="previous">Previous Cycle</option>
         </select>
+      </label>
+      <label className="text-sm font-semibold text-slate-700">
+        <span>Calendar month</span>
+        <input name="month" type="month" defaultValue={filters.month ?? ""} onChange={(event) => clearPeriodSibling(event, "cycle")} className={fieldClass} />
       </label>
       <label className="text-sm font-semibold text-slate-700">
         <span>Category</span>
@@ -128,7 +174,7 @@ function ActiveFilterChips({ filters }: { filters: TransactionFilters }) {
   if (filterList.length === 0) return null;
 
   const clearHref = transactionHref(filters, {
-    cycle: null, category: null, type: null, search: null
+    cycle: null, month: null, category: null, type: null, search: null
   });
   return (
     <div aria-label="Active filters" className="mt-4 flex min-w-0 flex-wrap items-center gap-2">
@@ -151,17 +197,17 @@ function FilterBar({
   data,
   filters,
   onSubmit
-}: {
-  data: TransactionPageData | null;
+  }: {
+  data: Pick<TimelinePage, "categories"> | null;
   filters: TransactionFilters;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
     <section aria-label="Transaction filters" className="rounded-veyra border border-veyra-line bg-white p-4">
       <form
-        key={JSON.stringify([filters.cycle, filters.category, filters.type, filters.search])}
+        key={JSON.stringify([filters.cycle, filters.month, filters.category, filters.type, filters.search])}
         onSubmit={onSubmit}
-        className="hidden md:grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1.2fr_1fr_1.5fr_auto] xl:items-end"
+        className="hidden md:grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.2fr_1fr_1.5fr_auto] xl:items-end"
       >
         <FilterControls data={data} filters={filters} />
         <button type="submit" className="h-10 rounded-lg bg-veyra-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 motion-reduce:transition-none">
@@ -170,11 +216,11 @@ function FilterBar({
       </form>
       <div className="transaction-mobile-filters space-y-3 md:hidden">
         <form
-          key={JSON.stringify([filters.cycle, filters.category, filters.type, filters.search])}
+          key={JSON.stringify([filters.cycle, filters.month, filters.category, filters.type, filters.search])}
           onSubmit={onSubmit}
           className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2"
         >
-          <PreservedFilters filters={filters} names={["cycle", "category", "type"]} />
+          <PreservedFilters filters={filters} names={["cycle", "month", "category", "type"]} />
           <label className="min-w-0 text-sm font-semibold text-slate-700">
             <span>Merchant Search</span>
             <input name="search" type="search" autoComplete="off" defaultValue={filters.search ?? ""} maxLength={200} className={fieldClass} />
@@ -184,18 +230,22 @@ function FilterBar({
         <details className="rounded-lg border border-veyra-line bg-white">
           <summary className="min-h-11 cursor-pointer px-3 py-2.5 text-sm font-semibold text-slate-700">Filters{activeFilters(filters).length ? ` (${activeFilters(filters).length})` : ""}</summary>
           <form
-            key={JSON.stringify([filters.cycle, filters.category, filters.type, filters.search])}
+            key={JSON.stringify([filters.cycle, filters.month, filters.category, filters.type, filters.search])}
             onSubmit={onSubmit}
             className="grid gap-3 border-t border-veyra-line p-3"
           >
             <PreservedFilters filters={filters} names={["search"]} />
             <label className="text-sm font-semibold text-slate-700">
               <span>Cycle</span>
-              <select name="cycle" defaultValue={filters.cycle ?? ""} className={fieldClass}>
+              <select name="cycle" defaultValue={filters.cycle ?? ""} onChange={(event) => clearPeriodSibling(event, "month")} className={fieldClass}>
                 <option value="">All Cycles</option>
                 <option value="current">Current Cycle</option>
                 <option value="previous">Previous Cycle</option>
               </select>
+            </label>
+            <label className="text-sm font-semibold text-slate-700">
+              <span>Calendar month</span>
+              <input name="month" type="month" defaultValue={filters.month ?? ""} onChange={(event) => clearPeriodSibling(event, "cycle")} className={fieldClass} />
             </label>
             <label className="text-sm font-semibold text-slate-700">
               <span>Category</span>
@@ -222,14 +272,17 @@ function FilterBar({
 }
 
 function TransactionRow({
-  transaction,
+  entry,
   selected,
-  onEdit
+  onEdit,
+  onAddInstallments
 }: {
-  transaction: Transaction;
+  entry: TimelineTransactionEntry;
   selected: boolean;
   onEdit: (transaction: Transaction, button: HTMLButtonElement) => void;
+  onAddInstallments: (transaction: Transaction, button: HTMLButtonElement) => void;
 }) {
+  const { transaction } = entry;
   const signedAmount = transaction.type === "income"
     ? transaction.amount
     : -transaction.amount;
@@ -251,6 +304,7 @@ function TransactionRow({
         {transaction.type === "income" ? "+" : ""}{formatIdr(signedAmount)}
       </td>
       <td className="whitespace-nowrap px-4 py-3 text-right">
+        <div className="flex flex-wrap justify-end gap-2">
         <button
           type="button"
           aria-label={`Edit transaction ${merchantLabel} on ${dateLabel}`}
@@ -259,12 +313,59 @@ function TransactionRow({
         >
           Edit
         </button>
+        {transaction.creditCard && transaction.type === "expense" && !entry.hasInstallmentPlan && (
+          <button
+            type="button"
+            aria-label={`Add installments for ${merchantLabel} on ${dateLabel}`}
+            onClick={(event) => onAddInstallments(transaction, event.currentTarget)}
+            className="min-h-10 rounded-lg bg-veyra-navy px-3 text-sm font-semibold text-white transition-colors hover:bg-veyra-navy-2 motion-reduce:transition-none"
+          >
+            Add installments
+          </button>
+        )}
+        </div>
       </td>
     </tr>
   );
 }
 
-function Pagination({ data, filters }: { data: TransactionPageData; filters: TransactionFilters }) {
+function InstallmentRow({ entry, filters }: { entry: TimelineInstallmentEntry; filters: TransactionFilters }) {
+  const dateLabel = dateOnlyLabel(entry.dueDate);
+  const statusLabel = entry.state === "due" ? `Due on ${dateLabel}` : "Scheduled";
+  return (
+    <tr className="bg-slate-50/60">
+      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+        <time dateTime={entry.dueDate}>{dateLabel}</time>
+      </td>
+      <td className="px-4 py-3 font-semibold text-veyra-ink">
+        <span className="block break-words">{entry.merchant}</span>
+        <span className="mt-1 block text-xs font-semibold text-sky-700">Installment {entry.sequence}/{entry.tenorMonths}</span>
+      </td>
+      <td className="px-4 py-3 text-slate-600">{entry.category}</td>
+      <td className="px-4 py-3 text-slate-600">{entry.pocketId ? entry.pocketId : "No pocket"}</td>
+      <td className="px-4 py-3 text-slate-600">Scheduled</td>
+      <td className="px-4 py-3 text-slate-600">Expense</td>
+      <td className="px-4 py-3 text-right font-semibold tabular-nums text-veyra-ink">
+        <span className="block whitespace-nowrap">{formatIdr(entry.total)}</span>
+        <span className="mt-1 block text-xs font-normal text-slate-500">Principal {formatIdr(entry.principal)} · Interest {formatIdr(entry.interest)}</span>
+        <span className="mt-1 block text-xs font-normal text-slate-500">{statusLabel}</span>
+        {entry.interestPostingPending && <span className="mt-1 block text-xs font-semibold text-amber-700">Interest awaiting update</span>}
+      </td>
+      <td className="px-4 py-3 text-right">
+        <p className="mb-2 max-w-[12rem] text-left text-xs font-semibold text-slate-500">Principal already counted with purchase.</p>
+        <Link
+          href={purchaseContextHref(filters, entry.merchant)}
+          className="inline-flex min-h-10 items-center justify-center rounded-lg border border-veyra-line bg-white px-3 text-xs font-semibold text-sky-700 transition-colors hover:border-sky-200 hover:bg-sky-50 motion-reduce:transition-none"
+          aria-label={`View purchase context for transaction ${entry.originalTransactionId}`}
+        >
+          View purchase context (ID {entry.originalTransactionId})
+        </Link>
+      </td>
+    </tr>
+  );
+}
+
+function Pagination({ data, filters }: { data: TimelinePage; filters: TransactionFilters }) {
   if (!data.previousCursor && !data.nextCursor) return null;
   return (
     <nav aria-label="Transaction pages" className="mt-4 flex justify-end gap-2">
@@ -278,17 +379,19 @@ function TransactionTable({
   data,
   filters,
   selectedTransactionId,
-  onEdit
+  onEdit,
+  onAddInstallments
 }: {
-  data: TransactionPageData;
+  data: TimelinePage;
   filters: TransactionFilters;
   selectedTransactionId: string | null;
   onEdit: (transaction: Transaction, button: HTMLButtonElement) => void;
+  onAddInstallments: (transaction: Transaction, button: HTMLButtonElement) => void;
 }) {
   return <>
     <div className="transactions-desktop-table hidden md:block overflow-x-auto rounded-veyra border border-veyra-line bg-white">
       <table className="w-full min-w-[760px] border-collapse text-left text-sm">
-        <caption className="sr-only">Finalized transaction records</caption>
+        <caption className="sr-only">Transactions and installment schedule</caption>
         <thead className="border-b border-veyra-line bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500"><tr>
           <th scope="col" className="px-4 py-3 font-semibold">Date</th>
           <th scope="col" className="px-4 py-3 font-semibold">Merchant</th>
@@ -299,23 +402,55 @@ function TransactionTable({
           <th scope="col" className="px-4 py-3 text-right font-semibold tabular-nums">Amount</th>
           <th scope="col" className="px-4 py-3 text-right font-semibold">Action</th>
         </tr></thead>
-        <tbody className="divide-y divide-veyra-line">{data.items.map((transaction) => (
+        <tbody className="divide-y divide-veyra-line">{data.items.map((entry) => entry.kind === "transaction" ? (
           <TransactionRow
-            key={transaction.id}
-            transaction={transaction}
-            selected={transaction.id === selectedTransactionId}
+            key={entry.entryId}
+            entry={entry}
+            selected={entry.transaction.id === selectedTransactionId}
             onEdit={onEdit}
+            onAddInstallments={onAddInstallments}
           />
+        ) : (
+          <InstallmentRow key={entry.entryId} entry={entry} filters={filters} />
         ))}</tbody>
       </table>
     </div>
-    <ul className="transactions-mobile-list divide-y divide-veyra-line rounded-veyra border border-veyra-line bg-white md:hidden" aria-label="Finalized transaction records">
-      {data.items.map((transaction) => {
+    <ul className="transactions-mobile-list divide-y divide-veyra-line rounded-veyra border border-veyra-line bg-white md:hidden" aria-label="Transactions and installment schedule">
+      {data.items.map((entry) => {
+        if (entry.kind === "installment") {
+          const dateLabel = dateOnlyLabel(entry.dueDate);
+          const statusLabel = entry.state === "due" ? `Due on ${dateLabel}` : "Scheduled";
+          return (
+            <li key={entry.entryId} className="grid min-w-0 gap-2 bg-slate-50/60 p-4">
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <strong className="block break-words">{entry.merchant}</strong>
+                  <span className="mt-1 block text-xs font-semibold text-sky-700">Installment {entry.sequence}/{entry.tenorMonths}</span>
+                </div>
+                <strong className="whitespace-nowrap text-right tabular-nums">{formatIdr(entry.total)}</strong>
+              </div>
+              <p className="min-w-0 break-words text-xs text-slate-600">
+                <time dateTime={entry.dueDate}>{dateLabel}</time>{` · ${entry.category} · ${statusLabel}`}
+              </p>
+              <p className="text-xs text-slate-600">Principal {formatIdr(entry.principal)} · Interest {formatIdr(entry.interest)}</p>
+              <p className="text-xs font-semibold text-slate-500">Principal already counted with purchase.</p>
+              {entry.interestPostingPending && <p className="text-xs font-semibold text-amber-700">Interest awaiting update.</p>}
+              <Link
+                href={purchaseContextHref(filters, entry.merchant)}
+                className="inline-flex min-h-10 w-fit max-w-full items-center justify-center rounded-lg border border-veyra-line bg-white px-3 text-xs font-semibold text-sky-700"
+                aria-label={`View purchase context for transaction ${entry.originalTransactionId}`}
+              >
+                View purchase context (ID {entry.originalTransactionId})
+              </Link>
+            </li>
+          );
+        }
+        const { transaction } = entry;
         const dateLabel = transactionDate.format(new Date(transaction.transactionDate));
         const merchantLabel = transaction.merchant ?? "Unknown merchant";
         const signedAmount = transaction.type === "income" ? transaction.amount : -transaction.amount;
         return (
-          <li key={transaction.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 p-4">
+          <li key={entry.entryId} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 p-4">
             <strong className="min-w-0 break-words">{merchantLabel}</strong>
             <strong className={`whitespace-nowrap text-right tabular-nums ${transaction.type === "income" ? "text-veyra-success" : "text-veyra-ink"}`}>
               {transaction.type === "income" ? "+" : ""}{formatIdr(signedAmount)}
@@ -324,9 +459,16 @@ function TransactionTable({
               <time dateTime={transaction.transactionDate}>{dateLabel}</time>
               {` · ${transaction.category ?? "Uncategorized"} · ${transaction.pocketName ?? "No pocket"}`}
             </p>
-            <button type="button" aria-label={`Edit transaction ${merchantLabel} on ${dateLabel}`} onClick={(event) => onEdit(transaction, event.currentTarget)} className="min-h-10 rounded-lg border border-veyra-line px-3 text-sm font-semibold text-sky-700">
-              Edit
-            </button>
+            <div className="flex flex-wrap justify-end gap-2">
+              <button type="button" aria-label={`Edit transaction ${merchantLabel} on ${dateLabel}`} onClick={(event) => onEdit(transaction, event.currentTarget)} className="min-h-10 rounded-lg border border-veyra-line px-3 text-sm font-semibold text-sky-700">
+                Edit
+              </button>
+              {transaction.creditCard && transaction.type === "expense" && !entry.hasInstallmentPlan && (
+                <button type="button" aria-label={`Add installments for ${merchantLabel} on ${dateLabel}`} onClick={(event) => onAddInstallments(transaction, event.currentTarget)} className="min-h-10 rounded-lg bg-veyra-navy px-3 text-sm font-semibold text-white">
+                  Add installments
+                </button>
+              )}
+            </div>
             <span className="sr-only">{transaction.source} {transaction.type}</span>
           </li>
         );
@@ -339,14 +481,22 @@ function TransactionTable({
 export function TransactionsPage({ result, pockets, pocketsUnavailable, filters, viewerName }: TransactionsPageProps) {
   const router = useRouter();
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedInstallmentTransaction, setSelectedInstallmentTransaction] = useState<Transaction | null>(null);
   const [saveAnnouncement, setSaveAnnouncement] = useState("");
   const returnFocusRef = useRef<HTMLButtonElement | null>(null);
+  const installmentReturnFocusRef = useRef<HTMLButtonElement | null>(null);
   const filterList = activeFilters(filters);
 
   const openEditor = useCallback((transaction: Transaction, button: HTMLButtonElement): void => {
     returnFocusRef.current = button;
     setSaveAnnouncement("");
     setSelectedTransaction(transaction);
+  }, []);
+
+  const openInstallmentDialog = useCallback((transaction: Transaction, button: HTMLButtonElement): void => {
+    installmentReturnFocusRef.current = button;
+    setSaveAnnouncement("");
+    setSelectedInstallmentTransaction(transaction);
   }, []);
 
   const announceSaved = useCallback((): void => {
@@ -358,11 +508,21 @@ export function TransactionsPage({ result, pockets, pocketsUnavailable, filters,
     requestAnimationFrame(() => returnFocusRef.current?.focus());
   }, []);
 
+  const closeInstallmentDialog = useCallback((): void => {
+    setSelectedInstallmentTransaction(null);
+    requestAnimationFrame(() => installmentReturnFocusRef.current?.focus());
+  }, []);
+
+  const announceInstallmentsSaved = useCallback((): void => {
+    setSaveAnnouncement("Installment plan saved.");
+  }, []);
+
   function submitFilters(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const changes: Partial<TransactionFilters> = {
       cycle: formValue(formData, "cycle") as TransactionFilters["cycle"],
+      month: formValue(formData, "month"),
       category: formValue(formData, "category"),
       type: formValue(formData, "type") as TransactionFilters["type"],
       search: formValue(formData, "search")
@@ -374,10 +534,15 @@ export function TransactionsPage({ result, pockets, pocketsUnavailable, filters,
   const data = result.data;
   const unavailable = result.error || !data;
   const pageCount = data?.items.length ?? 0;
-  const pageCountLabel = `${pageCount} ${pageCount === 1 ? "transaction" : "transactions"} on this page`;
+  const pageCountLabel = `${pageCount} ${pageCount === 1 ? "entry" : "entries"} on this page`;
+  const pageSubtotal = data?.items.reduce((sum, entry) => sum + entry.budgetAmount, 0) ?? 0;
+  const selectedTransactionEntry = selectedTransaction && data?.items.find((entry) =>
+    entry.kind === "transaction" && entry.transaction.id === selectedTransaction.id
+  );
   const resultAnnouncement = transactionResultAnnouncementModel(result, filters);
   const clearHref = transactionHref(filters, {
     cycle: null,
+    month: null,
     category: null,
     type: null,
     search: null
@@ -387,7 +552,7 @@ export function TransactionsPage({ result, pockets, pocketsUnavailable, filters,
     <AppShell
       activePage="transactions"
       viewerName={viewerName}
-      accountContext="Finalized records"
+      accountContext="Transactions and schedules"
       mainId="transactions"
       skipLabel="Skip to transactions"
     >
@@ -398,11 +563,16 @@ export function TransactionsPage({ result, pockets, pocketsUnavailable, filters,
       <div className="mx-auto max-w-[1280px] space-y-4 xl:px-2 xl:py-1">
         <header className="flex flex-wrap items-end justify-between gap-3 border-b border-veyra-line pb-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Finalized records</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Transactions and schedules</p>
             <h1 className="mt-1 text-3xl font-bold tracking-[-0.04em] text-veyra-ink">Transactions</h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-600">Review finalized income and expenses recorded by Veyra.</p>
+            <p className="mt-1 max-w-2xl text-sm text-slate-600">Review finalized income and expenses plus scheduled installment entries recorded by Veyra.</p>
           </div>
-          {!unavailable && <p className="text-sm font-semibold text-slate-600">{pageCountLabel}</p>}
+          {!unavailable && (
+            <div className="text-right text-sm font-semibold text-slate-600">
+              <p>{pageCountLabel}</p>
+              <p className="mt-1 text-xs font-normal text-slate-500">Page subtotal: {formatIdr(pageSubtotal)}</p>
+            </div>
+          )}
         </header>
 
         <FilterBar data={data} filters={filters} onSubmit={submitFilters} />
@@ -417,13 +587,13 @@ export function TransactionsPage({ result, pockets, pocketsUnavailable, filters,
           <section className="rounded-veyra border border-veyra-line bg-white p-8 text-center">
             {filterList.length > 0 ? (
               <>
-                <h2 className="text-lg font-bold">No Finalized Transactions Match These Filters.</h2>
-                <p className="mt-1 text-sm text-slate-600">Clear the filters to return to all finalized records.</p>
+                <h2 className="text-lg font-bold">No Transactions or Installment Entries Match These Filters.</h2>
+                <p className="mt-1 text-sm text-slate-600">Clear the filters to return to all transactions and scheduled entries.</p>
                 <Link href={clearHref} className={`${secondaryLink} mt-4`}>Clear Filters</Link>
               </>
             ) : (
               <>
-                <h2 className="text-lg font-bold">No Finalized Transactions Yet</h2>
+                <h2 className="text-lg font-bold">No Transactions or Installment Entries Yet</h2>
                 <p className="mt-1 text-sm text-slate-600">Transactions recorded through Telegram or email will appear here.</p>
               </>
             )}
@@ -434,6 +604,7 @@ export function TransactionsPage({ result, pockets, pocketsUnavailable, filters,
             filters={filters}
             selectedTransactionId={selectedTransaction?.id ?? null}
             onEdit={openEditor}
+            onAddInstallments={openInstallmentDialog}
           />
         )}
       </div>
@@ -441,10 +612,19 @@ export function TransactionsPage({ result, pockets, pocketsUnavailable, filters,
         <TransactionEditDialog
           key={selectedTransaction.id}
           transaction={selectedTransaction}
+          hasInstallmentPlan={selectedTransactionEntry?.kind === "transaction" && selectedTransactionEntry.hasInstallmentPlan}
           pockets={pockets}
           pocketsUnavailable={pocketsUnavailable}
           onClose={closeEditor}
           onSaved={announceSaved}
+        />
+      )}
+      {selectedInstallmentTransaction && (
+        <InstallmentDialog
+          key={selectedInstallmentTransaction.id}
+          transaction={selectedInstallmentTransaction}
+          onClose={closeInstallmentDialog}
+          onSaved={announceInstallmentsSaved}
         />
       )}
     </AppShell>

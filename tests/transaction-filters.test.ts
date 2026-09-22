@@ -7,6 +7,7 @@ import {
 
 const filtersWithCursor = {
   cycle: "current" as const,
+  month: null,
   category: "Dining",
   type: "expense" as const,
   search: null,
@@ -17,6 +18,7 @@ const filtersWithCursor = {
 test("normalizes supported filters and drops arrays or unknown values", () => {
   assert.deepEqual(parseTransactionFilters({
     cycle: "current",
+    month: "2026-09",
     category: " Dining ",
     type: "expense",
     search: " tuku ",
@@ -25,7 +27,8 @@ test("normalizes supported filters and drops arrays or unknown values", () => {
     ignored: "value",
     repeated: ["one", "two"]
   }), {
-    cycle: "current",
+    cycle: null,
+    month: "2026-09",
     category: "Dining",
     type: "expense",
     search: "tuku",
@@ -39,6 +42,17 @@ test("changing a filter clears cursor state", () => {
   assert.equal(href, "/transactions?cycle=current&category=Groceries&type=expense");
 });
 
+test("selecting a month clears cycle and selecting a cycle clears month", () => {
+  assert.equal(
+    transactionHref(filtersWithCursor, { month: "2026-09" }),
+    "/transactions?month=2026-09&category=Dining&type=expense"
+  );
+  assert.equal(
+    transactionHref({ ...filtersWithCursor, cycle: null, month: "2026-08" }, { cycle: "current" }),
+    "/transactions?cycle=current&category=Dining&type=expense"
+  );
+});
+
 test("removing one chip preserves the other filters", () => {
   assert.equal(
     transactionHref(filtersWithCursor, { category: null }),
@@ -49,6 +63,7 @@ test("removing one chip preserves the other filters", () => {
 test("drops a direction that has no cursor", () => {
   assert.deepEqual(parseTransactionFilters({ direction: "previous" }), {
     cycle: null,
+    month: null,
     category: null,
     type: null,
     search: null,
@@ -65,6 +80,7 @@ test("drops filter text and cursors beyond their limits", () => {
     direction: "next"
   }), {
     cycle: null,
+    month: null,
     category: null,
     type: null,
     search: null,
@@ -76,6 +92,7 @@ test("drops filter text and cursors beyond their limits", () => {
 test("creates canonical encoded hrefs in filter order", () => {
   assert.equal(transactionHref({
     cycle: "previous",
+    month: null,
     category: "Food & Dining",
     type: "income",
     search: "tuku coffee",

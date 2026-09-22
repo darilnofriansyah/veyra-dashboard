@@ -302,7 +302,7 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.match(page, /function jakartaToday\(\)/);
   assert.match(page, /timeZone:\s*"Asia\/Jakarta"/);
   assert.match(page, /parseTransactionFilters\(await searchParams\)/);
-  assert.match(page, /Promise\.all\(\[\s*loadTransactions\(\{/s);
+  assert.match(page, /Promise\.all\(\[\s*loadTransactionTimeline\(\{/s);
   assert.match(page, /loadPockets\(session\.telegramUserId\)/);
   assert.match(page, /pockets=\{pocketResult\.pockets\}/);
   assert.match(page, /telegramUserId:\s*session\.telegramUserId/);
@@ -312,11 +312,11 @@ test("renders the protected URL-filtered finalized transaction list", async () =
 
   assert.match(view, /^"use client"/);
   assert.match(view, /activePage="transactions"/);
-  assert.match(view, /accountContext="Finalized records"/);
-  for (const label of ["Cycle", "Category", "Type", "Merchant Search"]) {
+  assert.match(view, /accountContext="Transactions and schedules"/);
+  for (const label of ["Cycle", "Calendar month", "Category", "Type", "Merchant Search"]) {
     assert.match(view, new RegExp(`>${label}<`));
   }
-  for (const name of ["cycle", "category", "type", "search"]) {
+  for (const name of ["cycle", "month", "category", "type", "search"]) {
     assert.match(view, new RegExp(`name="${name}"`));
   }
   assert.match(view, /event\.preventDefault\(\)/);
@@ -329,13 +329,13 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.notEqual(delimiterCategoryKey, categoryAndTypeKey);
   assert.match(
     view,
-    /key=\{JSON\.stringify\(\[filters\.cycle, filters\.category, filters\.type, filters\.search\]\)\}/
+    /key=\{JSON\.stringify\(\[filters\.cycle, filters\.month, filters\.category, filters\.type, filters\.search\]\)\}/
   );
   assert.match(view, /aria-label="Active filters"[^>]*className="[^"]*min-w-0/);
   assert.match(view, /aria-label=\{`Remove[^>]*className="[^"]*max-w-full[^"]*min-w-0[^"]*break-words/);
   assert.match(view, /name="search"[^>]*autoComplete="off"/);
 
-  assert.match(view, /<caption[^>]*>Finalized transaction records<\/caption>/);
+  assert.match(view, /<caption[^>]*>Transactions and installment schedule<\/caption>/);
   for (const heading of ["Date", "Merchant", "Category", "Pocket", "Source", "Type", "Amount", "Action"]) {
     assert.match(view, new RegExp(`<th scope="col"[^>]*>${heading}</th>`));
   }
@@ -345,7 +345,7 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.match(view, /formatIdr\(signedAmount\)/);
   assert.match(view, /<th scope="col" className="[^"]*tabular-nums[^"]*">Amount<\/th>/);
   assert.match(view, /<td className=\{`[^"]*tabular-nums/);
-  assert.match(view, /transactions?"\} on this page/);
+  assert.match(view, /entries?"\} on this page/);
   assert.match(
     view,
     /<p role="status" aria-live="polite" aria-atomic="true" className="sr-only">\s*<span key=\{resultAnnouncement\.key\}>\{resultAnnouncement\.message\}<\/span>\s*<\/p>/
@@ -357,7 +357,7 @@ test("renders the protected URL-filtered finalized transaction list", async () =
   assert.ok(resultStatus >= 0 && resultStatus < resultBranches);
   assert.doesNotMatch(view, /<section role="status"[^>]*>\s*<h2[^>]*>Transactions Couldn’t Be Loaded/);
   assert.match(view, /Transactions recorded through Telegram or email will appear here\./);
-  assert.match(view, /No Finalized Transactions Match These Filters\./);
+  assert.match(view, /No Transactions or Installment Entries Match These Filters\./);
   assert.match(view, /router\.refresh\(\)/);
   assert.match(view, /className="[^"]*transition-colors[^"]*hover:bg-veyra-navy-2[^"]*motion-reduce:transition-none">Retry<\/button>/);
   assert.match(view, /direction: "previous"/);
@@ -377,7 +377,7 @@ test("renders mobile transaction records without table scrolling", async () => {
   assert.match(view, /transactions-mobile-list divide-y/);
   assert.match(view, /transaction-mobile-filters/);
   assert.match(view, /<summary[^>]*>Filters/);
-  assert.match(view, /aria-label="Finalized transaction records"/);
+  assert.match(view, /aria-label="Transactions and installment schedule"/);
   assert.match(loading, /transactions-mobile-skeleton/);
 });
 
@@ -693,7 +693,7 @@ test("keeps transaction loading stable and documents correction boundary", async
   assert.match(loading, /animate-pulse/);
   assert.doesNotMatch(loading, /IDR\s*[0-9]/);
 
-  assert.match(readme, /POST <NEXUS_CORE_URL>\/api\/veyra\/transactions\/query/);
+  assert.match(readme, /POST <NEXUS_CORE_URL>\/api\/veyra\/transactions\/timeline\/query/);
   assert.match(readme, /PATCH <NEXUS_CORE_URL>\/api\/veyra\/transactions\/:transactionId/);
   assert.match(readme, /verified Telegram user ID.*server-side/i);
   assert.match(readme, /amount, merchant, and category/i);

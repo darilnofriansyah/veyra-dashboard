@@ -7,6 +7,23 @@ records; checked or unchecked boxes there do not represent the current backlog.
 
 ## Current work
 
+### B-007 — Activate credit-card installment schedules
+
+- **Status:** Repository implementation and mock-Core browser smoke completed
+  on 2026-09-20; production activation remains pending.
+- **Evidence:** `/transactions` renders Core's mixed transaction/installment
+  timeline, supports month navigation, previews and creates plans for eligible
+  purchases, locks planned purchase amounts, and presents schedule principal
+  separately from its page budget subtotal. Local contract, form, API, filter,
+  announcement, and UI checks cover the repository boundary.
+- **Dependencies:** An operator must apply the additive Core migration and
+  deploy the timeline/installment endpoints. They must then configure and
+  verify the protected scheduled due-interest request; this Veyra repository
+  neither installs nor verifies that scheduler.
+- **Complete when:** An authorized production check confirms the Core migration,
+  deployed endpoints, a plan creation, and a scheduled due-interest posting
+  without double-counting principal.
+
 ### B-006 — Refresh responsive dashboard design
 
 - **Status:** Active; implementation planned on 2026-08-23.

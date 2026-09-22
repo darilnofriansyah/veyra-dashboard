@@ -6,7 +6,7 @@ import { TransactionsPage } from "@/components/transactions-page";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import { loadPockets } from "@/lib/pockets-api";
 import { parseTransactionFilters } from "@/lib/transaction-filters";
-import { loadTransactions } from "@/lib/transactions-api";
+import { loadTransactionTimeline } from "@/lib/transaction-timeline-api";
 
 export const metadata: Metadata = {
   title: "Transactions",
@@ -35,7 +35,7 @@ export default async function Page({ searchParams }: PageProps) {
 
   const filters = parseTransactionFilters(await searchParams);
   const [result, pocketResult] = await Promise.all([
-    loadTransactions({
+    loadTransactionTimeline({
       telegramUserId: session.telegramUserId,
       asOfDate: jakartaToday(),
       filters

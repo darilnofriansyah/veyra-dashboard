@@ -10,6 +10,7 @@ import type { Transaction, TransactionEditState } from "@/lib/transaction-contra
 
 interface TransactionEditDialogProps {
   transaction: Transaction;
+  hasInstallmentPlan?: boolean;
   pockets: Pocket[];
   pocketsUnavailable: boolean;
   onClose: () => void;
@@ -27,6 +28,7 @@ const transactionDate = new Intl.DateTimeFormat("en", {
 
 export function TransactionEditDialog({
   transaction,
+  hasInstallmentPlan = false,
   pockets,
   pocketsUnavailable,
   onClose,
@@ -52,7 +54,8 @@ export function TransactionEditDialog({
 
   const parsedAmount = editableAmount(amount);
   const amountDelta = parsedAmount === null ? null : parsedAmount - transaction.amount;
-  const showCreditDelta = transaction.creditCard
+  const showCreditDelta = !hasInstallmentPlan
+    && transaction.creditCard
     && amountDelta !== null
     && Number.isSafeInteger(amountDelta)
     && amountDelta !== 0;
@@ -221,11 +224,18 @@ export function TransactionEditDialog({
                 required
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
+                disabled={pending || hasInstallmentPlan}
                 aria-invalid={Boolean(amountError)}
                 aria-describedby={amountError ? `${amountId}-error` : undefined}
                 className={inputClass}
               />
+              {hasInstallmentPlan && <input type="hidden" name="amount" value={amount} />}
               {amountError && <p id={`${amountId}-error`} className="mt-1 text-sm text-veyra-danger">{amountError}</p>}
+              {hasInstallmentPlan && (
+                <p className="mt-2 rounded-lg border border-sky-100 bg-sky-50 p-3 text-sm text-sky-800">
+                  Amount is locked while installments are planned. Merchant, category, and pocket details can still be edited.
+                </p>
+              )}
               {showCreditDelta && (
                 <p className="mt-2 rounded-lg border border-sky-100 bg-sky-50 p-3 text-sm font-semibold text-sky-800">
                   Credit used will adjust by {amountDelta > 0 ? "+" : "−"}{formatIdr(Math.abs(amountDelta))}.

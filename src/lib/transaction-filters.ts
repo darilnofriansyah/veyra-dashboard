@@ -4,6 +4,7 @@ export interface RawTransactionSearchParams {
 
 export interface TransactionFilters {
   cycle: "current" | "previous" | null;
+  month?: string | null;
   category: string | null;
   type: "income" | "expense" | null;
   search: string | null;
@@ -13,7 +14,7 @@ export interface TransactionFilters {
 
 const MAX_TEXT_LENGTH = 200;
 const MAX_CURSOR_LENGTH = 512;
-const FILTER_KEYS = ["cycle", "category", "type", "search"] as const;
+const FILTER_KEYS = ["cycle", "month", "category", "type", "search"] as const;
 
 function singleValue(raw: RawTransactionSearchParams, name: string): string | null {
   const value = raw[name];
@@ -41,6 +42,7 @@ function changedFilter(
 function rawFilters(filters: TransactionFilters): RawTransactionSearchParams {
   return {
     cycle: filters.cycle,
+    month: filters.month,
     category: filters.category,
     type: filters.type,
     search: filters.search,
@@ -54,9 +56,14 @@ export function parseTransactionFilters(raw: RawTransactionSearchParams): Transa
   const direction = cursor
     ? enumValue(singleValue(raw, "direction"), ["next", "previous"])
     : null;
+  const monthValue = singleValue(raw, "month");
+  const month = monthValue && /^\d{4}-(0[1-9]|1[0-2])$/.test(monthValue)
+    ? monthValue
+    : null;
 
   return {
-    cycle: enumValue(singleValue(raw, "cycle"), ["current", "previous"]),
+    cycle: month ? null : enumValue(singleValue(raw, "cycle"), ["current", "previous"]),
+    month,
     category: boundedText(singleValue(raw, "category"), MAX_TEXT_LENGTH),
     type: enumValue(singleValue(raw, "type"), ["income", "expense"]),
     search: boundedText(singleValue(raw, "search"), MAX_TEXT_LENGTH),
@@ -70,13 +77,17 @@ export function transactionHref(
   changes: Partial<TransactionFilters>
 ): string {
   const normalized = parseTransactionFilters(rawFilters(filters));
-  const updated = parseTransactionFilters({ ...rawFilters(normalized), ...changes });
+  const rawChanges = { ...rawFilters(normalized), ...changes };
+  if (Object.hasOwn(changes, "month") && changes.month) rawChanges.cycle = null;
+  if (Object.hasOwn(changes, "cycle") && changes.cycle) rawChanges.month = null;
+  const updated = parseTransactionFilters(rawChanges);
   const next = changedFilter(normalized, updated, changes)
     ? { ...updated, cursor: null, direction: null }
     : updated;
   const parameters = new URLSearchParams();
 
   appendParameter(parameters, "cycle", next.cycle);
+  appendParameter(parameters, "month", next.month ?? null);
   appendParameter(parameters, "category", next.category);
   appendParameter(parameters, "type", next.type);
   appendParameter(parameters, "search", next.search);
