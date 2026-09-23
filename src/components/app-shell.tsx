@@ -1,6 +1,6 @@
 "use client";
 
-import { House, Receipt, Wallet } from "@phosphor-icons/react";
+import { House, Receipt, Wallet } from "@phosphor-icons/react/ssr";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";

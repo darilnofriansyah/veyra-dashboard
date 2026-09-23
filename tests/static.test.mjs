@@ -22,6 +22,13 @@ test("shares one safe mobile navigation across browser and Telegram", async () =
   assert.doesNotMatch(css, /transition:\s*all/);
 });
 
+test("keeps shared shell icons safe for server route collection", async () => {
+  const shell = await readSource("src/components/app-shell.tsx");
+
+  assert.match(shell, /from "@phosphor-icons\/react\/ssr"/);
+  assert.doesNotMatch(shell, /from "@phosphor-icons\/react";/);
+});
+
 test("reserves room for wrapped mobile navigation labels", async () => {
   const css = await readSource("src/app/globals.css");
 
