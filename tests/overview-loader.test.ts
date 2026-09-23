@@ -264,6 +264,22 @@ test("accepts overview responses while the Core API attention field is pending",
   assert.deepEqual(loaded.data?.current.attention, []);
 });
 
+test("accepts Core budget limits of zero", async () => {
+  const body = structuredClone(validResponse);
+  body.current.budgets[0].limit = 0;
+  body.previous.budgets[0].limit = 0;
+
+  const loaded = await loadOverview(
+    "2026-07-25",
+    "976684739",
+    async () => Response.json(body, { status: 201 })
+  );
+
+  assert.equal(loaded.error, false);
+  assert.equal(loaded.data?.current.budgets[0]?.limit, 0);
+  assert.equal(loaded.data?.previous.budgets[0]?.limit, 0);
+});
+
 test("rejects malformed overview responses", async (t) => {
   const malformedCases: Array<[string, () => Response]> = [
     ["date", () => {
@@ -309,7 +325,7 @@ test("rejects malformed overview responses", async (t) => {
       };
       body.current.alert = {
         category: "Food",
-        limit: 0,
+        limit: -1,
         spent: 1_000_000,
         percent: 100,
         status: "over"

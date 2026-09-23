@@ -120,7 +120,7 @@ function parseBudget(value: unknown, name: string): BudgetSummary {
   if (!BUDGET_STATUSES.has(status)) throw new Error(`Invalid ${name}.status`);
   return {
     category: text(item.category, `${name}.category`),
-    limit: positiveRupiah(item.limit, `${name}.limit`),
+    limit: rupiah(item.limit, `${name}.limit`),
     spent: rupiah(item.spent, `${name}.spent`),
     percent: nonNegativeNumber(item.percent, `${name}.percent`),
     status
